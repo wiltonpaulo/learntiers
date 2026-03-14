@@ -82,7 +82,6 @@ export default async function AdminCoursesPage() {
                         <button
                           type="submit"
                           className="inline-flex items-center gap-1 text-xs font-medium text-destructive hover:underline"
-                          onClick={() => {}} // handled via form
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           Delete
