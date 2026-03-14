@@ -1,0 +1,48 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish"
+  },
+  "nav": {
+    "courses": "Courses",
+    "leaderboard": "Leaderboard",
+    "profile": "Profile",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "name": "Full name",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?"
+  },
+  "course": {
+    "sections": "Sections",
+    "completedSections": "{completed} of {total} completed",
+    "startSection": "Start",
+    "resumeSection": "Resume",
+    "sectionCompleted": "Section completed!",
+    "watchSection": "Watch this section to unlock the quiz."
+  },
+  "quiz": {
+    "title": "Quick Quiz",
+    "submit": "Submit answer",
+    "correct": "Correct!",
+    "incorrect": "Incorrect. The correct answer was: {answer}",
+    "score": "Score: {score}/{total}"
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "rank": "Rank",
+    "player": "Player",
+    "country": "Country",
+    "score": "Score"
+  }
+}

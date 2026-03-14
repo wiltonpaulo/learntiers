@@ -1,0 +1,48 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "error": "Algo deu errado.",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "finish": "Concluir"
+  },
+  "nav": {
+    "courses": "Cursos",
+    "leaderboard": "Ranking",
+    "profile": "Perfil",
+    "logout": "Sair"
+  },
+  "auth": {
+    "login": "Entrar",
+    "register": "Criar conta",
+    "email": "E-mail",
+    "password": "Senha",
+    "name": "Nome completo",
+    "noAccount": "Não tem uma conta?",
+    "hasAccount": "Já tem uma conta?"
+  },
+  "course": {
+    "sections": "Seções",
+    "completedSections": "{completed} de {total} concluídas",
+    "startSection": "Começar",
+    "resumeSection": "Retomar",
+    "sectionCompleted": "Seção concluída!",
+    "watchSection": "Assista esta seção para desbloquear o quiz."
+  },
+  "quiz": {
+    "title": "Quiz Rápido",
+    "submit": "Enviar resposta",
+    "correct": "Correto!",
+    "incorrect": "Incorreto. A resposta certa era: {answer}",
+    "score": "Pontuação: {score}/{total}"
+  },
+  "leaderboard": {
+    "title": "Ranking",
+    "rank": "Posição",
+    "player": "Jogador",
+    "country": "País",
+    "score": "Pontuação"
+  }
+}
