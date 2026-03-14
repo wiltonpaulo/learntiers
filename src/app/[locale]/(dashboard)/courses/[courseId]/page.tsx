@@ -2,9 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { CheckCircle2, Circle, Clock, PlayCircle, BookOpen, ChevronLeft, GraduationCap, ShieldCheck, MonitorPlay, Infinity, Smartphone, Trophy } from 'lucide-react'
+import { CheckCircle2, Clock, PlayCircle, BookOpen, ChevronLeft, GraduationCap, ShieldCheck, MonitorPlay, Infinity, Smartphone, Trophy } from 'lucide-react'
 
 import type { CourseRow, CourseSectionRow, UserProgressRow } from '@/types/database'
 
