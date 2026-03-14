@@ -4,6 +4,7 @@ import { getLocale } from 'next-intl/server'
 import { Badge } from '@/components/ui/badge'
 import { BookOpen, Clock, ArrowRight, GraduationCap, ShieldCheck, Search, Filter } from 'lucide-react'
 import type { CourseRow } from '@/types/database'
+import { Star } from 'lucide-react'
 
 export default async function CoursesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params

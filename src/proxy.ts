@@ -5,7 +5,7 @@ import { routing } from './i18n/routing'
 
 const intlMiddleware = createIntlMiddleware(routing)
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // 1. Refresh the Supabase session — must happen first so Server Components
   //    downstream receive an up-to-date auth cookie.
   const { supabaseResponse } = await updateSession(request)
