@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { GraduationCap, BookOpen, Clock, ChevronRight, Trophy, Star, Users, ShieldCheck } from 'lucide-react'
+import type { CourseRow } from '@/types/database'
 
 /**
  * Home Page — Landing page with the same professional style as the course details.
@@ -19,7 +20,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     supabase.auth.getUser(),
   ])
 
-  const courses = coursesRes.data
+  const courses = coursesRes.data as CourseRow[] | null
   const user = userRes.data.user
   const isAdmin = user?.app_metadata?.role === 'admin'
 
