@@ -45,8 +45,8 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   ])
 
   const course = courseRes.data
-  const sections = sectionsRes.data ?? []
-  const userProgress = progressRes?.data ?? []
+  const sections = (sectionsRes.data ?? []) as Pick<CourseSectionRow, 'id' | 'title' | 'start_time_seconds' | 'end_time_seconds'>[]
+  const userProgress = (progressRes?.data ?? []) as Pick<UserProgressRow, 'section_id' | 'is_completed'>[]
 
   if (!course) {
     notFound()
