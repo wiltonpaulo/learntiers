@@ -15,6 +15,7 @@ import {
   Infinity,
   Smartphone,
   Trophy,
+  ShieldCheck,
 } from 'lucide-react'
 import type { CourseRow, CourseSectionRow, UserProgressRow } from '@/types/database'
 
@@ -60,6 +61,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
 
   const isLoggedIn = !!user
   const loginMessage = encodeURIComponent('Log in or create a free account to start learning.')
+  const isAdmin = user?.app_metadata?.role === 'admin'
 
   return (
     <div className="min-h-screen bg-background pb-12">
@@ -67,13 +69,24 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
       <div className="bg-slate-900 text-white py-12 px-4">
         <div className="container mx-auto max-w-5xl flex flex-col lg:flex-row gap-8 relative">
           <div className="flex-1 lg:w-2/3 space-y-5 lg:pr-8">
-            <Link
-              href={`/${locale}/courses`}
-              className="inline-flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 font-bold transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back to Courses
-            </Link>
+            <div className="flex items-center justify-between">
+              <Link
+                href={`/${locale}/courses`}
+                className="inline-flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 font-bold transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Courses
+              </Link>
+              {isAdmin && (
+                <Link
+                  href={`/${locale}/admin/courses/${courseId}`}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-bold hover:bg-amber-500/20 transition-colors"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Edit Course
+                </Link>
+              )}
+            </div>
 
             <h1 className="text-3xl md:text-4xl font-extrabold leading-tight">{course.title}</h1>
 
