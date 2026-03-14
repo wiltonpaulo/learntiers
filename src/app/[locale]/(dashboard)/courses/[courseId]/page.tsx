@@ -4,138 +4,150 @@ import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { CheckCircle2, Circle, Clock, PlayCircle, BookOpen, ChevronLeft, GraduationCap } from 'lucide-react'
+import {
+  CheckCircle2,
+  Clock,
+  PlayCircle,
+  BookOpen,
+  ChevronLeft,
+  GraduationCap,
+  MonitorPlay,
+  Infinity,
+  Smartphone,
+  Trophy,
+} from 'lucide-react'
 import type { CourseRow, CourseSectionRow, UserProgressRow } from '@/types/database'
 
 interface CourseDetailPageProps {
-  params: Promise<{ courseId: string }>
+  params: Promise<{
+    courseId: string
+  }>
 }
 
 export default async function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { courseId } = await params
   const locale = await getLocale()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const [courseRes, sectionsRes, progressRes] = await Promise.all([
-    supabase
-      .from('courses')
-      .select('id, title, description, cover_image_url')
-      .eq('id', courseId)
-      .single(),
+    supabase.from('courses').select('*').eq('id', courseId).single(),
     supabase
       .from('course_sections')
-      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index')
+      .select('id, title, start_time_seconds, end_time_seconds')
       .eq('course_id', courseId)
-      .order('order_index', { ascending: true }),
-    user
-      ? supabase
-          .from('user_progress')
-          .select('section_id, is_completed')
-          .eq('user_id', user.id)
-      : Promise.resolve({ data: [] }),
+      .order('order_index'),
+    user ? supabase.from('user_progress').select('section_id, is_completed').eq('user_id', user.id) : null,
   ])
 
-  const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'description' | 'cover_image_url'> | null
-  const sections = (sectionsRes.data ?? []) as CourseSectionRow[]
-  const progress = (progressRes.data ?? []) as Pick<UserProgressRow, 'section_id' | 'is_completed'>[]
+  const course = courseRes.data
+  const sections = sectionsRes.data ?? []
+  const userProgress = progressRes?.data ?? []
 
-  if (!course) notFound()
+  if (!course) {
+    notFound()
+  }
 
-  const completedSet = new Set(progress.filter((p) => p.is_completed).map((p) => p.section_id))
-  const completedCount = sections.filter((s) => completedSet.has(s.id)).length
   const totalDuration = sections.reduce((acc, s) => acc + (s.end_time_seconds - s.start_time_seconds), 0)
+  const completedSet = new Set(userProgress.filter((p) => p.is_completed).map((p) => p.section_id))
+  const completedCount = completedSet.size
+
   const firstIncomplete = sections.find((s) => !completedSet.has(s.id))
   const ctaSection = firstIncomplete ?? sections[0]
 
+  const isLoggedIn = !!user
+  const loginMessage = encodeURIComponent('Log in or create a free account to start learning.')
+
   return (
-    <div>
+    <div className="min-h-screen bg-background pb-12">
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="py-10 px-4" style={{ backgroundColor: 'var(--nav-bg)' }}>
-        <div className="container mx-auto max-w-5xl">
-          <Link
-            href={`/${locale}/courses`}
-            className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white mb-5 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            All Courses
-          </Link>
+      <div className="bg-slate-900 text-white py-12 px-4">
+        <div className="container mx-auto max-w-5xl flex flex-col lg:flex-row gap-8 relative">
+          <div className="flex-1 lg:w-2/3 space-y-5 lg:pr-8">
+            <Link
+              href={`/${locale}/courses`}
+              className="inline-flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 font-bold transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back to Courses
+            </Link>
 
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Text */}
-            <div className="flex-1 space-y-3">
-              <h1 className="text-2xl md:text-3xl font-bold text-white">{course.title}</h1>
-              {course.description && (
-                <p className="text-white/70 text-sm leading-relaxed">{course.description}</p>
-              )}
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <Stat icon={<BookOpen className="w-4 h-4" />} label={`${sections.length} lessons`} />
-                <Stat icon={<Clock className="w-4 h-4" />} label={formatDuration(totalDuration)} />
-                {completedCount > 0 && (
-                  <Stat
-                    icon={<CheckCircle2 className="w-4 h-4 text-green-400" />}
-                    label={`${completedCount} / ${sections.length} completed`}
-                    className="text-green-400"
-                  />
-                )}
-              </div>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-extrabold leading-tight">{course.title}</h1>
 
-            {/* Cover thumbnail */}
-            <div className="hidden md:block w-56 h-36 rounded-xl overflow-hidden shrink-0 bg-white/10">
-              {course.cover_image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={course.cover_image_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <GraduationCap className="w-10 h-10 text-white/30" />
-                </div>
+            {course.description && (
+              <p className="text-slate-300 text-base md:text-lg leading-relaxed">{course.description}</p>
+            )}
+
+            <div className="flex flex-wrap items-center gap-5 pt-2 text-sm text-slate-300">
+              <span className="flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4" />
+                {sections.length} lessons
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                {formatDuration(totalDuration)}
+              </span>
+              {completedCount > 0 && (
+                <span className="flex items-center gap-1.5 text-green-400 font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {completedCount} / {sections.length} completed
+                </span>
               )}
             </div>
           </div>
+
+          {/* Spacer for absolute floating card on large screens */}
+          <div className="hidden lg:block lg:w-1/3" />
         </div>
       </div>
 
-      {/* ── Main + Sidebar ────────────────────────────────────────────────── */}
-      <div className="container mx-auto max-w-5xl px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      {/* ── Main Content + Sidebar ──────────────────────────────────────── */}
+      <div className="container mx-auto max-w-5xl px-4 py-10">
+        <div className="flex flex-col lg:flex-row gap-10">
+          {/* Left Column: Sections list */}
+          <div className="flex-1 lg:w-2/3 min-w-0">
+            <h2 className="text-2xl font-bold mb-2">Course Content</h2>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+              <span>{sections.length} sections</span>
+              <span>•</span>
+              <span>{formatDuration(totalDuration)} total length</span>
+            </div>
 
-          {/* Sections list */}
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold mb-4">Course Content</h2>
-            <div className="rounded-xl border overflow-hidden divide-y">
+            <div className="rounded-xl border bg-card overflow-hidden divide-y">
               {sections.map((section, index) => {
                 const done = completedSet.has(section.id)
                 const duration = section.end_time_seconds - section.start_time_seconds
+
+                const targetSectionUrl = isLoggedIn
+                  ? `/${locale}/courses/${courseId}/sections/${section.id}`
+                  : `/${locale}/login?message=${loginMessage}`
+
                 return (
                   <Link
                     key={section.id}
-                    href={`/${locale}/courses/${courseId}/sections/${section.id}`}
-                    className="flex items-center gap-4 px-5 py-4 hover:bg-muted/50 transition-colors group"
+                    href={targetSectionUrl}
+                    className="flex items-center gap-4 px-5 py-5 hover:bg-muted/50 transition-colors group"
                   >
                     {/* Status icon */}
                     <div className="shrink-0">
-                      {done
-                        ? <CheckCircle2 className="w-5 h-5 text-primary" />
-                        : <Circle className="w-5 h-5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
-                      }
+                      {done ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <PlayCircle className="w-5 h-5 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                      )}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <span className="text-xs text-muted-foreground font-medium">Lesson {index + 1}</span>
-                          <p className="text-sm font-medium leading-snug group-hover:text-primary transition-colors truncate">
-                            {section.title}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs text-muted-foreground tabular-nums">
-                            {formatMins(duration)}
-                          </span>
-                          <PlayCircle className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />
-                        </div>
+                      <p className="text-sm font-medium leading-snug group-hover:text-primary transition-colors truncate mb-1">
+                        {index + 1}. {section.title}
+                      </p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground tabular-nums">{formatMins(duration)}</span>
                       </div>
                     </div>
                   </Link>
@@ -144,77 +156,85 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
 
               {sections.length === 0 && (
                 <div className="px-5 py-10 text-center text-sm text-muted-foreground">
-                  No lessons added yet.
+                  No lessons added to this course yet.
                 </div>
               )}
             </div>
           </div>
 
-          {/* Sticky CTA sidebar */}
+          {/* Right Column: Sticky CTA Sidebar (Udemy style) */}
           {ctaSection && (
-            <div className="lg:w-72 shrink-0">
-              <div className="sticky top-20 rounded-xl border overflow-hidden shadow-sm">
+            <div className="lg:w-1/3 shrink-0 relative">
+              <div className="sticky top-8 lg:-mt-72 rounded-xl border bg-background shadow-2xl overflow-hidden z-10">
                 {/* Preview thumbnail */}
-                <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 relative">
-                  {course.cover_image_url
-                    ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={course.cover_image_url} alt="" className="w-full h-full object-cover" />
-                    )
-                    : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <PlayCircle className="w-12 h-12 text-primary/50" />
-                      </div>
-                    )
-                  }
+                <div className="aspect-video bg-muted relative group overflow-hidden cursor-pointer">
+                  {course.cover_image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={course.cover_image_url}
+                      alt="Course cover"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                      <GraduationCap className="w-12 h-12 text-slate-300" />
+                    </div>
+                  )}
                   {/* Play overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                    <div className="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
                       <PlayCircle className="w-8 h-8 text-primary" />
                     </div>
                   </div>
+                  <div className="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent" />
+                  <div className="absolute bottom-3 left-0 right-0 text-center font-bold text-white tracking-wide text-sm">
+                    Preview this course
+                  </div>
                 </div>
 
-                <div className="p-5 space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">
-                      {completedCount > 0 ? 'Continue where you left off' : 'Start learning'}
-                    </p>
-                    <p className="text-sm font-semibold line-clamp-2">{ctaSection.title}</p>
-                  </div>
+                <div className="p-6 space-y-6">
+                  <div className="text-3xl font-extrabold">Free</div>
 
                   <Link
-                    href={`/${locale}/courses/${courseId}/sections/${ctaSection.id}`}
-                    className="flex w-full items-center justify-center gap-2 bg-primary text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors"
+                    href={
+                      isLoggedIn
+                        ? `/${locale}/courses/${courseId}/sections/${ctaSection.id}`
+                        : `/${locale}/login?message=${loginMessage}`
+                    }
+                    className="flex w-full items-center justify-center gap-2 bg-primary text-primary-foreground rounded-none py-4 text-base font-bold hover:bg-primary/90 transition-colors shadow-sm"
                   >
-                    <PlayCircle className="w-4 h-4" />
-                    {completedCount > 0 ? 'Continue' : 'Start Learning'}
+                    {isLoggedIn ? (completedCount > 0 ? 'Continue Learning' : 'Start Course') : 'Log in to Start'}
                   </Link>
 
-                  <Separator />
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Lessons</span>
-                      <span className="font-medium">{sections.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total time</span>
-                      <span className="font-medium">{formatDuration(totalDuration)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium text-primary">
-                        {sections.length > 0
-                          ? `${Math.round((completedCount / sections.length) * 100)}%`
-                          : '0%'}
-                      </span>
-                    </div>
+                  <div className="space-y-4 text-sm text-muted-foreground pt-2">
+                    <p className="font-semibold text-foreground text-base">This course includes:</p>
+                    <ul className="space-y-3.5">
+                      <li className="flex items-center gap-3">
+                        <MonitorPlay className="w-4 h-4 text-foreground/70" /> {formatDuration(totalDuration)}{' '}
+                        on-demand video
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <BookOpen className="w-4 h-4 text-foreground/70" /> {sections.length} interactive lessons
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <Infinity className="w-4 h-4 text-foreground/70" /> Full lifetime access
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <Smartphone className="w-4 h-4 text-foreground/70" /> Access on mobile and TV
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <Trophy className="w-4 h-4 text-foreground/70" /> Gamified quizzes & leaderboard
+                      </li>
+                    </ul>
                   </div>
 
-                  <Badge variant="secondary" className="w-full justify-center">
-                    Free Course
-                  </Badge>
+                  <Separator />
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Your Progress</span>
+                    <span className="font-bold text-primary">
+                      {sections.length > 0 ? `${Math.round((completedCount / sections.length) * 100)}%` : '0%'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -227,32 +247,18 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function Stat({
-  icon,
-  label,
-  className = 'text-white/70',
-}: {
-  icon: React.ReactNode
-  label: string
-  className?: string
-}) {
-  return (
-    <span className={`flex items-center gap-1.5 text-sm ${className}`}>
-      {icon}
-      {label}
-    </span>
-  )
-}
-
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+
   if (h > 0) return `${h}h ${m}m`
-  return `${m} min`
+  if (m > 0) return `${m}m ${s}s`
+  return `${s}s`
 }
 
 function formatMins(seconds: number): string {
   const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${String(s).padStart(2, '0')}`
+  const s = Math.floor(seconds % 60)
+  return `${m}m ${s}s`
 }
