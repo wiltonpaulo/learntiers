@@ -44,7 +44,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
     user ? supabase.from('user_progress').select('section_id, is_completed').eq('user_id', user.id) : null,
   ])
 
-  const course = courseRes.data
+  const course = courseRes.data as CourseRow | null
   const sections = (sectionsRes.data ?? []) as Pick<CourseSectionRow, 'id' | 'title' | 'start_time_seconds' | 'end_time_seconds'>[]
   const userProgress = (progressRes?.data ?? []) as Pick<UserProgressRow, 'section_id' | 'is_completed'>[]
 
