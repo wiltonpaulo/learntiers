@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { GraduationCap, BookOpen, Clock, Search, Filter, Star, ShieldCheck } from 'lucide-react'
+import type { CourseRow } from '@/types/database'
 
 export default async function CoursesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -15,7 +16,7 @@ export default async function CoursesPage({ params }: { params: Promise<{ locale
     supabase.auth.getUser(),
   ])
 
-  const courses = coursesRes.data
+  const courses = coursesRes.data as CourseRow[] | null
   const user = userRes.data.user
   const isAdmin = user?.app_metadata?.role === 'admin'
 
