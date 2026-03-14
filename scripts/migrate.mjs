@@ -5,7 +5,7 @@
  * in alphabetical order, skipping files that have already been applied.
  *
  * Runs automatically before `next build` via the `build` script in package.json.
- * Requires env var: DATABASE_URL (direct PostgreSQL connection string)
+ * Requires env var: POSTGRES_URL (direct PostgreSQL connection string)
  *
  * Format: postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
  * Find it in: Supabase Dashboard → Settings → Database → Connection string (URI)
@@ -44,10 +44,10 @@ await loadEnvFile('.env')
 
 // ─── Validate env ─────────────────────────────────────────────────────────────
 
-const DATABASE_URL = process.env.DATABASE_URL
+const POSTGRES_URL = process.env.POSTGRES_URL
 
-if (!DATABASE_URL) {
-  console.error('\n❌  DATABASE_URL is not set.')
+if (!POSTGRES_URL) {
+  console.error('\n❌  POSTGRES_URL is not set.')
   console.error('    Add it to .env.local and to Vercel environment variables.')
   console.error(
     '    Format: postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres',
@@ -58,7 +58,7 @@ if (!DATABASE_URL) {
 
 // ─── Connect ──────────────────────────────────────────────────────────────────
 
-const sql = postgres(DATABASE_URL, {
+const sql = postgres(POSTGRES_URL, {
   ssl: 'require',
   max: 1,
   connect_timeout: 15,
