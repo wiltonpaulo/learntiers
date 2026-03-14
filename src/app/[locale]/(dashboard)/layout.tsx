@@ -1,16 +1,26 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
+import { createClient } from '@/lib/supabase/server'
+import { logoutAction } from '@/lib/actions/auth'
+import { Button } from '@/components/ui/button'
 
 /**
  * Dashboard shell layout — wraps all authenticated routes.
- * TODO: add auth guard using Supabase server client (redirect to /login if no session).
+ * Auth guard: unauthenticated users are redirected to /login.
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale()
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect(`/${locale}/login`)
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Top navigation */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <nav className="container mx-auto flex h-14 items-center justify-between px-4">
           <Link href={`/${locale}/courses`} className="font-bold text-lg tracking-tight">
@@ -35,11 +45,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
             >
               Profile
             </Link>
+            <form action={logoutAction}>
+              <input type="hidden" name="locale" value={locale} />
+              <Button variant="ghost" size="sm" type="submit">
+                Log out
+              </Button>
+            </form>
           </div>
         </nav>
       </header>
 
-      {/* Page content */}
       <main className="flex-1 container mx-auto px-4 py-8">
         {children}
       </main>

@@ -1,11 +1,18 @@
-import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
+import { loginAction } from '@/lib/actions/auth'
 
-export default async function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<{ error?: string; message?: string }>
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
   const locale = await getLocale()
+  const { error, message } = await searchParams
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
@@ -15,31 +22,56 @@ export default async function LoginPage() {
           <CardDescription>Sign in to your account to continue learning.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* TODO: wire up Supabase Auth form (email/password or OAuth) */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-          <Button className="w-full" type="submit">
-            Log in
-          </Button>
+          {error && (
+            <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+              {decodeURIComponent(error)}
+            </p>
+          )}
+          {message && (
+            <p className="text-sm text-green-700 bg-green-50 rounded-md px-3 py-2">
+              {decodeURIComponent(message)}
+            </p>
+          )}
+
+          <form action={loginAction} className="space-y-4">
+            {/* Pass locale to the action */}
+            <input type="hidden" name="locale" value={locale} />
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@example.com"
+                required
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+              />
+            </div>
+
+            <Button className="w-full" type="submit">
+              Log in
+            </Button>
+          </form>
+
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
-            <Link href={`/${locale}/register`} className="underline underline-offset-4 hover:text-primary">
+            <Link
+              href={`/${locale}/register`}
+              className="underline underline-offset-4 hover:text-primary"
+            >
               Create account
             </Link>
           </p>

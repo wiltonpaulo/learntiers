@@ -97,7 +97,12 @@ export interface Database {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      increment_user_score: {
+        Args: { p_user_id: string; p_delta: number }
+        Returns: void
+      }
+    }
     Enums: Record<string, never>
   }
 }
