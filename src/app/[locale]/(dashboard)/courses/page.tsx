@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { Badge } from '@/components/ui/badge'
-import { BookOpen, Clock, ArrowRight, GraduationCap } from 'lucide-react'
+import { BookOpen, Clock, ArrowRight, GraduationCap, ShieldCheck, Search, Filter } from 'lucide-react'
 import type { CourseRow } from '@/types/database'
 
 export default async function CoursesPage() {
@@ -16,6 +16,8 @@ export default async function CoursesPage() {
       .order('created_at', { ascending: false }),
     supabase.auth.getUser(),
   ])
+
+  const isAdmin = user?.app_metadata?.role === 'admin'
 
   // Count sections per course for the cards
   const { data: sectionCounts } = await supabase
