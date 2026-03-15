@@ -25,6 +25,7 @@ export interface CourseRow {
   title: string
   description: string | null
   cover_image_url: string | null
+  transcript: Json | null
   created_at: string
 }
 

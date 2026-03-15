@@ -76,7 +76,7 @@ export default async function CourseEditPage({ params, searchParams }: CourseEdi
         <h2 className="text-sm font-semibold">Course details</h2>
         <Separator />
 
-        <form action={updateCourseAction} className="space-y-5">
+        <form action={updateCourseAction} className="space-y-5" encType="multipart/form-data">
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="courseId" value={courseId} />
 
@@ -99,6 +99,23 @@ export default async function CourseEditPage({ params, searchParams }: CourseEdi
               defaultValue={course.cover_image_url ?? ''}
               placeholder="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg"
             />
+          </div>
+
+          <div className="space-y-1.5 pt-2">
+            <Label htmlFor="transcript_file" className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              Full Course Transcript <span className="text-muted-foreground text-xs font-normal">(optional, .srt or .vtt)</span>
+            </Label>
+            <Input 
+              id="transcript_file" 
+              name="transcript_file" 
+              type="file" 
+              accept=".srt,.vtt"
+              className="cursor-pointer bg-background" 
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Uploading a new file will overwrite the existing synchronized transcript for this course.
+            </p>
           </div>
 
           <div className="flex justify-end pt-2 border-t">

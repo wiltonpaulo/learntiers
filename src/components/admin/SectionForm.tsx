@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { Youtube, Clock, HelpCircle, X } from 'lucide-react'
+import { Youtube, Clock, HelpCircle, X, FileText } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ export function SectionForm({
     : null
 
   return (
-    <form action={action} className="space-y-8">
+    <form action={action} className="space-y-8" encType="multipart/form-data">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="courseId" value={courseId} />
       {sectionId && <input type="hidden" name="sectionId" value={sectionId} />}

@@ -20,12 +20,12 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const [courseRes, sectionRes, allSectionsRes, quizRes, progressRes] = await Promise.all([
     supabase
       .from('courses')
-      .select('id, title')
+      .select('id, title, transcript')
       .eq('id', courseId)
       .single(),
     supabase
       .from('course_sections')
-      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, transcript, order_index')
+      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index')
       .eq('id', sectionId)
       .eq('course_id', courseId)
       .single(),
@@ -47,10 +47,10 @@ export default async function SectionPage({ params }: SectionPageProps) {
       : Promise.resolve({ data: [] }),
   ])
 
-  const course = courseRes.data as Pick<CourseRow, 'id' | 'title'> | null
+  const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'transcript'> | null
   const section = sectionRes.data as Pick<
     CourseSectionRow,
-    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'transcript' | 'order_index'
+    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index'
   > | null
   const allSections = (allSectionsRes.data ?? []) as Pick<
     CourseSectionRow,
@@ -144,7 +144,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
         startTimeSeconds={section.start_time_seconds}
         endTimeSeconds={section.end_time_seconds}
         textSummary={section.text_summary}
-        transcript={section.transcript as unknown as TranscriptSegment[]}
+        transcript={course.transcript as unknown as TranscriptSegment[]}
         quiz={
           quiz
             ? {

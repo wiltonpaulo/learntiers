@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { SlicedYouTubePlayer, SlicedYouTubePlayerRef } from '@/components/player/SlicedYouTubePlayer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -58,20 +58,36 @@ export function SectionView({
   const playerRef = useRef<SlicedYouTubePlayerRef>(null)
   const transcriptRefs = useRef<(HTMLDivElement | null)[]>([])
 
+  // ── Filter transcript for this section ──────────────────────────────────
+  const filteredTranscript = useMemo(() => {
+    if (!transcript) return null
+    return transcript.filter(
+      (s) => s.start >= startTimeSeconds - 2 && s.start <= endTimeSeconds
+    )
+  }, [transcript, startTimeSeconds, endTimeSeconds])
+
   // ── Sync transcript scroll ───────────────────────────────────────────────
   useEffect(() => {
-    if (activeTab === 'transcript' && transcript) {
-      const activeIndex = transcript.findIndex(
+    if (activeTab === 'transcript' && filteredTranscript) {
+      const activeIndex = filteredTranscript.findIndex(
         (s) => currentTime >= s.start && currentTime <= s.end
       )
+      
       if (activeIndex !== -1) {
-        transcriptRefs.current[activeIndex]?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        })
+        // Para fazer com que a linha ativa seja a SEGUNDA, 
+        // nós rolamos para a linha ANTERIOR (se existir)
+        const scrollTargetIndex = Math.max(0, activeIndex - 1)
+        const element = transcriptRefs.current[scrollTargetIndex]
+        
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start', // Alinha o topo da linha anterior com o topo do bloco
+          })
+        }
       }
     }
-  }, [currentTime, activeTab, transcript])
+  }, [currentTime, activeTab, filteredTranscript])
 
   // ── When the sliced player reaches end_time ───────────────────────────────
   const handleSectionEnd = useCallback(async () => {
@@ -143,7 +159,7 @@ export function SectionView({
         >
           Summary
         </button>
-        {transcript && (
+        {filteredTranscript && filteredTranscript.length > 0 && (
           <button
             onClick={() => setActiveTab('transcript')}
             className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
@@ -158,7 +174,7 @@ export function SectionView({
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[200px]">
+      <div className="min-h-[180px]">
         {activeTab === 'summary' && textSummary && (
           <Card>
             <CardHeader>
@@ -170,12 +186,12 @@ export function SectionView({
           </Card>
         )}
 
-        {activeTab === 'transcript' && transcript && (
+        {activeTab === 'transcript' && filteredTranscript && (
           <Card>
             <CardContent className="p-0">
-              <ScrollArea className="h-[300px] p-4">
+              <ScrollArea className="h-[200px] p-4">
                 <div className="space-y-2">
-                  {transcript.map((segment, i) => {
+                  {filteredTranscript.map((segment, i) => {
                     const isActive = currentTime >= segment.start && currentTime <= segment.end
                     return (
                       <div

@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { routing } from '@/i18n/routing'
+import { fetchYouTubeTranscript } from '@/lib/youtube'
+import { parseSubtitleFile } from '@/lib/subtitle-parser'
 
 // ─── Guard helper ─────────────────────────────────────────────────────────────
 
@@ -32,6 +34,14 @@ export async function createCourseAction(formData: FormData) {
     title: formData.get('title') as string,
     description: (formData.get('description') as string) || null,
     cover_image_url: (formData.get('cover_image_url') as string) || null,
+    transcript: null as any,
+  }
+
+  // Handle Transcript File
+  const transcriptFile = formData.get('transcript_file') as File | null
+  if (transcriptFile && transcriptFile.size > 0) {
+    const text = await transcriptFile.text()
+    courseData.transcript = parseSubtitleFile(text)
   }
 
   let sectionsToImport: any[] = []
@@ -64,6 +74,7 @@ export async function createCourseAction(formData: FormData) {
     title: courseData.title,
     description: courseData.description,
     cover_image_url: courseData.cover_image_url,
+    transcript: courseData.transcript,
   } as never).select('id').single()
 
   if (courseError) {
@@ -108,11 +119,20 @@ export async function updateCourseAction(formData: FormData) {
   const courseId = formData.get('courseId') as string
   const db = createAdminClient()
 
-  const { error } = await db.from('courses').update({
+  let updatePayload: any = {
     title: formData.get('title') as string,
     description: (formData.get('description') as string) || null,
     cover_image_url: (formData.get('cover_image_url') as string) || null,
-  } as never).eq('id', courseId)
+  }
+
+  // Handle Transcript File
+  const transcriptFile = formData.get('transcript_file') as File | null
+  if (transcriptFile && transcriptFile.size > 0) {
+    const text = await transcriptFile.text()
+    updatePayload.transcript = parseSubtitleFile(text)
+  }
+
+  const { error } = await db.from('courses').update(updatePayload as never).eq('id', courseId)
 
   if (error) redirect(`/${locale}/admin/courses/${courseId}?error=${encodeURIComponent(error.message)}`)
 
@@ -166,14 +186,16 @@ export async function updateSectionAction(formData: FormData) {
   const sectionId = formData.get('sectionId') as string
   const db = createAdminClient()
 
-  const { error } = await db.from('course_sections').update({
+  let updatePayload: any = {
     title: formData.get('title') as string,
     yt_video_id: formData.get('yt_video_id') as string,
     start_time_seconds: parseInt(formData.get('start_time_seconds') as string, 10),
     end_time_seconds: parseInt(formData.get('end_time_seconds') as string, 10),
     text_summary: (formData.get('text_summary') as string) || null,
     order_index: parseInt(formData.get('order_index') as string, 10),
-  } as never).eq('id', sectionId)
+  }
+
+  const { error } = await db.from('course_sections').update(updatePayload as never).eq('id', sectionId)
 
   if (error) redirect(`/${locale}/admin/courses/${courseId}/sections/${sectionId}/edit?error=${encodeURIComponent(error.message)}`)
 
