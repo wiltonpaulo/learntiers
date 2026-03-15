@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
-import { GraduationCap, BookOpen, Clock, Search, Filter, Star, ShieldCheck } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { BookOpen, Clock, ArrowRight, GraduationCap, ShieldCheck, Search, Filter } from 'lucide-react'
 import type { CourseRow } from '@/types/database'
+import { Star } from 'lucide-react'
 
 export default async function CoursesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -19,6 +21,16 @@ export default async function CoursesPage({ params }: { params: Promise<{ locale
   const courses = coursesRes.data as CourseRow[] | null
   const user = userRes.data.user
   const isAdmin = user?.app_metadata?.role === 'admin'
+
+  // Count sections per course for the cards
+  const { data: sectionCounts } = await supabase
+    .from('course_sections')
+    .select('course_id')
+
+  const countMap: Record<string, number> = {}
+  sectionCounts?.forEach((s: { course_id: string }) => {
+    countMap[s.course_id] = (countMap[s.course_id] ?? 0) + 1
+  })
 
   return (
     <div className="min-h-screen bg-background">
@@ -110,8 +122,8 @@ export default async function CoursesPage({ params }: { params: Promise<{ locale
                       <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                       <span className="text-xs font-bold">4.8</span>
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-tighter text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> micro-lessons
+                    <span className="text-[10px] font-bold uppercase tracking-tighter text-muted-foreground flex items-center gap-1.5">
+                      <Clock className="w-3 h-3" /> {countMap[course.id] ?? 0} micro-lessons
                     </span>
                   </div>
                   <div className="text-sm font-extrabold text-foreground">Free</div>
