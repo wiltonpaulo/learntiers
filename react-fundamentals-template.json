@@ -1,0 +1,126 @@
+{
+  "title": "React Fundamentals - Full Course for Beginners",
+  "description": "This course teaches the fundamentals of React.js by building a simple single-page application that allows users to search and browse popular TV series. It covers core concepts like JSX, components, state management, and routing.",
+  "cover_image_url": "https://img.youtube.com/vi/6Ied4aZxUzc/maxresdefault.jpg",
+  "sections": [
+    {
+      "title": "Setting React Environment",
+      "yt_video_id": "",
+      "start_time_seconds": 58,
+      "end_time_seconds": 165,
+      "text_summary": "Initial setup of the React development environment."
+    },
+    {
+      "title": "React Elements",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 165,
+      "end_time_seconds": 400,
+      "text_summary": "Understanding React elements and how they differ from HTML."
+    },
+    {
+      "title": "JSX",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 400,
+      "end_time_seconds": 577,
+      "text_summary": "Writing HTML-like syntax within JavaScript using JSX."
+    },
+    {
+      "title": "Components",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 577,
+      "end_time_seconds": 849,
+      "text_summary": "Organizing UI into reusable pieces using components."
+    },
+    {
+      "title": "Props",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 849,
+      "end_time_seconds": 1058,
+      "text_summary": "Passing data between components using props."
+    },
+    {
+      "title": "State",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 1058,
+      "end_time_seconds": 1217,
+      "text_summary": "Managing internal component data with state."
+    },
+    {
+      "title": "Lifecycle (componentDidMount)",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 1217,
+      "end_time_seconds": 1350,
+      "text_summary": "Handling actions when components mount using lifecycle methods."
+    },
+    {
+      "title": "Asynchronous Calls",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 1350,
+      "end_time_seconds": 1586,
+      "text_summary": "Making API requests and handling asynchronous data."
+    },
+    {
+      "title": "Containers",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 1586,
+      "end_time_seconds": 1782,
+      "text_summary": "Difference between components and containers for data management."
+    },
+    {
+      "title": "Lists and Keys",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 1782,
+      "end_time_seconds": 2087,
+      "text_summary": "Rendering multiple components from a list with unique keys."
+    },
+    {
+      "title": "Refactoring List Component",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 2087,
+      "end_time_seconds": 2190,
+      "text_summary": "Cleaning up and optimizing list-related code."
+    },
+    {
+      "title": "Forms (Input)",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 2190,
+      "end_time_seconds": 2403,
+      "text_summary": "Handling user input through React forms."
+    },
+    {
+      "title": "Conditional Rendering",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 2403,
+      "end_time_seconds": 2734,
+      "text_summary": "Showing different UI based on state or conditions."
+    },
+    {
+      "title": "Images (Loader Component)",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 2734,
+      "end_time_seconds": 2955,
+      "text_summary": "Creating a loading state for images or data."
+    },
+    {
+      "title": "Setting Up React Router",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 2955,
+      "end_time_seconds": 3242,
+      "text_summary": "Implementing navigation using React Router."
+    },
+    {
+      "title": "Setting Routes",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 3242,
+      "end_time_seconds": 3413,
+      "text_summary": "Defining application paths and their components."
+    },
+    {
+      "title": "Using Route Params",
+      "yt_video_id": "6Ied4aZxUzc",
+      "start_time_seconds": 3413,
+      "end_time_seconds": 3600,
+      "text_summary": "Handling dynamic data in URLs using route parameters."
+    }
+  ]
+}
