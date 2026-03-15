@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
-import { SectionView } from '@/components/course/SectionView'
+import { SectionView, TranscriptSegment } from '@/components/course/SectionView'
 import { SectionLayoutClient } from '@/components/course/SectionLayoutClient'
 import { CheckCircle2, Circle, ChevronLeft, PlayCircle, Clock } from 'lucide-react'
 import type { CourseSectionRow, QuizRow, UserProgressRow, CourseRow } from '@/types/database'
@@ -25,7 +25,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       .single(),
     supabase
       .from('course_sections')
-      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index')
+      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, transcript, order_index')
       .eq('id', sectionId)
       .eq('course_id', courseId)
       .single(),
@@ -50,7 +50,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const course = courseRes.data as Pick<CourseRow, 'id' | 'title'> | null
   const section = sectionRes.data as Pick<
     CourseSectionRow,
-    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index'
+    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'transcript' | 'order_index'
   > | null
   const allSections = (allSectionsRes.data ?? []) as Pick<
     CourseSectionRow,
@@ -144,6 +144,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
         startTimeSeconds={section.start_time_seconds}
         endTimeSeconds={section.end_time_seconds}
         textSummary={section.text_summary}
+        transcript={section.transcript as unknown as TranscriptSegment[]}
         quiz={
           quiz
             ? {

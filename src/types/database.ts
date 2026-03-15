@@ -36,6 +36,7 @@ export interface CourseSectionRow {
   start_time_seconds: number
   end_time_seconds: number
   text_summary: string | null
+  transcript: Json | null
   order_index: number
   created_at: string
 }

@@ -1,16 +1,18 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { SlicedYouTubePlayer } from '@/components/player/SlicedYouTubePlayer'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { SlicedYouTubePlayer, SlicedYouTubePlayerRef } from '@/components/player/SlicedYouTubePlayer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { saveProgressAction } from '@/lib/actions/progress'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface QuizOption {
-  index: number
+export interface TranscriptSegment {
+  start: number
+  end: number
   text: string
 }
 
@@ -20,6 +22,7 @@ interface SectionViewProps {
   startTimeSeconds: number
   endTimeSeconds: number
   textSummary: string | null
+  transcript: TranscriptSegment[] | null
   quiz: {
     id: string
     questionText: string
@@ -33,12 +36,6 @@ interface SectionViewProps {
 
 /**
  * SectionView — Client Component that owns the learning UX for a single section.
- *
- * State machine:
- *   watching → section_ended → answering_quiz → completed
- *
- * The quiz is locked until the player fires onSectionEnd, enforcing the
- * business rule: students must watch the full slice before attempting the quiz.
  */
 export function SectionView({
   sectionId,
@@ -46,6 +43,7 @@ export function SectionView({
   startTimeSeconds,
   endTimeSeconds,
   textSummary,
+  transcript,
   quiz,
   initiallyCompleted,
 }: SectionViewProps) {
@@ -54,6 +52,26 @@ export function SectionView({
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'summary' | 'transcript'>('summary')
+  const [currentTime, setCurrentTime] = useState(startTimeSeconds)
+
+  const playerRef = useRef<SlicedYouTubePlayerRef>(null)
+  const transcriptRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  // ── Sync transcript scroll ───────────────────────────────────────────────
+  useEffect(() => {
+    if (activeTab === 'transcript' && transcript) {
+      const activeIndex = transcript.findIndex(
+        (s) => currentTime >= s.start && currentTime <= s.end
+      )
+      if (activeIndex !== -1) {
+        transcriptRefs.current[activeIndex]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+      }
+    }
+  }, [currentTime, activeTab, transcript])
 
   // ── When the sliced player reaches end_time ───────────────────────────────
   const handleSectionEnd = useCallback(async () => {
@@ -67,6 +85,14 @@ export function SectionView({
     })
     if (error) setSaveError(error)
   }, [sectionId])
+
+  const handleTimeUpdate = useCallback((time: number) => {
+    setCurrentTime(time)
+  }, [])
+
+  const handleTranscriptClick = (startTime: number) => {
+    playerRef.current?.seekTo(startTime)
+  }
 
   // ── Quiz submission ────────────────────────────────────────────────────────
   const handleSubmitQuiz = async () => {
@@ -96,24 +122,83 @@ export function SectionView({
     <div className="space-y-6">
       {/* ★ Sliced player */}
       <SlicedYouTubePlayer
+        ref={playerRef}
         ytVideoId={ytVideoId}
         startTimeSeconds={startTimeSeconds}
         endTimeSeconds={endTimeSeconds}
         onSectionEnd={handleSectionEnd}
+        onTimeUpdate={handleTimeUpdate}
         isCompleted={initiallyCompleted}
       />
 
-      {/* Text summary */}
-      {textSummary && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground leading-relaxed">{textSummary}</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Tabs Switcher */}
+      <div className="flex border-b border-muted">
+        <button
+          onClick={() => setActiveTab('summary')}
+          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === 'summary'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Summary
+        </button>
+        {transcript && (
+          <button
+            onClick={() => setActiveTab('transcript')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'transcript'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Transcript
+          </button>
+        )}
+      </div>
+
+      {/* Tab Content */}
+      <div className="min-h-[200px]">
+        {activeTab === 'summary' && textSummary && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground leading-relaxed">{textSummary}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'transcript' && transcript && (
+          <Card>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[300px] p-4">
+                <div className="space-y-2">
+                  {transcript.map((segment, i) => {
+                    const isActive = currentTime >= segment.start && currentTime <= segment.end
+                    return (
+                      <div
+                        key={i}
+                        ref={(el) => { transcriptRefs.current[i] = el }}
+                        onClick={() => handleTranscriptClick(segment.start)}
+                        className={`p-2 rounded-md cursor-pointer transition-colors hover:bg-muted/50 ${
+                          isActive ? 'bg-primary/10 font-bold text-primary' : 'text-muted-foreground'
+                        }`}
+                      >
+                        <span className="text-xs opacity-50 mr-3 tabular-nums">
+                          {Math.floor(segment.start / 60)}:{(segment.start % 60).toFixed(0).padStart(2, '0')}
+                        </span>
+                        <span className="text-sm">{segment.text}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Quiz — locked until section ends */}
       {quiz && (
