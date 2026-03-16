@@ -1,11 +1,29 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useState, createContext, useContext } from 'react'
 import { Button } from '@/components/ui/button'
-import { PanelLeftClose, PanelLeftOpen, Maximize, Minimize, Sparkles } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { AIAssistantSidebar } from './AIAssistantSidebar'
 import { cn } from '@/lib/utils'
+
+// ─── Contexto para partilhar estado do layout ────────────────────────────────
+interface SectionLayoutContextType {
+  isCinemaMode: boolean
+  setIsCinemaMode: (v: boolean) => void
+  isAISidebarOpen: boolean
+  setIsAISidebarOpen: (v: boolean) => void
+  isSidebarOpen: boolean
+  setIsSidebarOpen: (v: boolean) => void
+}
+
+const SectionLayoutContext = createContext<SectionLayoutContextType | undefined>(undefined)
+
+export const useSectionLayout = () => {
+  const context = useContext(SectionLayoutContext)
+  if (!context) throw new Error('useSectionLayout must be used within SectionLayoutProvider')
+  return context
+}
 
 interface SectionLayoutClientProps {
   sectionId: string
@@ -29,89 +47,80 @@ export function SectionLayoutClient({
   const [isAISidebarOpen, setIsAISidebarOpen] = useState(true)
 
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)] bg-background overflow-hidden">
-      {!isCinemaMode && header}
+    <SectionLayoutContext.Provider value={{
+      isCinemaMode, setIsCinemaMode,
+      isAISidebarOpen, setIsAISidebarOpen,
+      isSidebarOpen, setIsSidebarOpen
+    }}>
+      <div className="flex flex-col h-[calc(100vh-56px)] bg-background overflow-hidden">
+        {/* Cabeçalho da Lição (Breadcrumbs) - Escondido apenas em Cinema Mode */}
+        {!isCinemaMode && header}
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left Sidebar */}
-        <aside
-          className={cn(
-            'flex-col border-r bg-card transition-all duration-300 ease-in-out h-full',
-            isSidebarOpen && !isCinemaMode ? 'w-80 flex' : 'w-0 hidden',
-          )}
-        >
-          <div className="px-4 py-3 border-b shrink-0" style={{ backgroundColor: 'var(--nav-bg)' }}>
-            <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Course content</p>
-            <p className="text-sm font-bold text-white mt-0.5">
-              {completedCount} / {totalCount} completed
-            </p>
-          </div>
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-            {sidebar}
-          </div>
-        </aside>
-
-        {/* Main Content Area */}
-        <main className="flex-1 flex flex-col min-w-0 h-full relative">
-          {/* Controls Bar */}
-          <div className="flex items-center gap-2 p-2 border-b bg-card shrink-0 h-12">
+        <div className="flex flex-1 min-h-0 overflow-hidden relative">
+          
+          {/* Botão flutuante para Abrir Sidebar quando fechada */}
+          {!isSidebarOpen && !isCinemaMode && (
             <Button
-              variant="ghost"
+              variant="secondary"
               size="icon"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className={cn(isCinemaMode && 'hidden')}
+              onClick={() => setIsSidebarOpen(true)}
+              className="absolute left-4 top-4 z-30 shadow-md rounded-full border bg-white dark:bg-slate-900 animate-in fade-in slide-in-from-left-2"
             >
-              {isSidebarOpen ? (
-                <PanelLeftClose className="w-5 h-5" />
-              ) : (
-                <PanelLeftOpen className="w-5 h-5" />
-              )}
+              <PanelLeftOpen className="w-4 h-4" />
             </Button>
+          )}
 
-            <div className="flex-1" />
-
-            <div className="flex items-center gap-1">
-              {/* ✨ AI Assistant Toggle Button */}
-              {!isCinemaMode && !isAISidebarOpen && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setIsAISidebarOpen(true)}
-                  className="gap-2 text-primary hover:text-primary hover:bg-primary/5 font-bold animate-in fade-in zoom-in duration-300"
-                >
-                  <Sparkles className="w-4 h-4 fill-primary" />
-                  Ask AI
-                </Button>
-              )}
-
-              <Button variant="ghost" size="icon" onClick={() => setIsCinemaMode(!isCinemaMode)}>
-                {isCinemaMode ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+          {/* Left Sidebar */}
+          <aside
+            className={cn(
+              'flex-col border-r bg-card transition-all duration-300 ease-in-out h-full relative',
+              isSidebarOpen && !isCinemaMode ? 'w-80 flex' : 'w-0 hidden',
+            )}
+          >
+            {/* Sidebar Header com Botão de Fechar integrado */}
+            <div className="px-4 py-3 border-b shrink-0 flex items-center justify-between" style={{ backgroundColor: 'var(--nav-bg)' }}>
+              <div>
+                <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">Course content</p>
+                <p className="text-xs font-bold text-white mt-0.5">
+                  {completedCount} / {totalCount} completed
+                </p>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsSidebarOpen(false)}
+                className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
+              >
+                <PanelLeftClose className="w-4 h-4" />
               </Button>
             </div>
-          </div>
-
-          {/* Video and Lesson Content */}
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-            <div
-              className={cn(
-                'mx-auto transition-all duration-300 ease-in-out p-6 md:p-8',
-                isCinemaMode ? 'max-w-7xl' : 'max-w-5xl',
-              )}
-            >
-              {children}
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              {sidebar}
             </div>
-          </div>
-        </main>
+          </aside>
 
-        {/* Right Sidebar (AI Assistant) */}
-        {!isCinemaMode && (
-          <AIAssistantSidebar 
-            sectionId={sectionId}
-            isOpen={isAISidebarOpen} 
-            onClose={() => setIsAISidebarOpen(false)} 
-          />
-        )}
+          {/* Main Content Area */}
+          <main className="flex-1 flex flex-col min-w-0 h-full relative bg-white dark:bg-slate-950">
+            {/* A BARRA SUPERIOR FOI REMOVIDA DAQUI */}
+            
+            {/* Conteúdo (Vídeo + Abas) */}
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              <div className="w-full h-full">
+                {children}
+              </div>
+            </div>
+          </main>
+
+          {/* Right Sidebar (AI Assistant) */}
+          {!isCinemaMode && (
+            <AIAssistantSidebar 
+              sectionId={sectionId}
+              isOpen={isAISidebarOpen} 
+              onClose={() => setIsAISidebarOpen(false)} 
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </SectionLayoutContext.Provider>
   )
 }

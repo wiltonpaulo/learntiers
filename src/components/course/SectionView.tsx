@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { saveProgressAction } from '@/lib/actions/progress'
 import { NotesTab } from './NotesTab'
+import { cn } from '@/lib/utils'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ export function SectionView({
   const [activeTab, setActiveTab] = useState<'summary' | 'transcript' | 'notes'>('summary')
   const [currentTime, setCurrentTime] = useState(startTimeSeconds)
   const [activeLineIndex, setActiveLineIndex] = useState(-1)
+  const [isTheaterMode, setIsTheaterMode] = useState(false)
 
   const playerRef = useRef<SlicedYouTubePlayerRef>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -132,129 +134,144 @@ export function SectionView({
   const isCorrectResult = submitted && selectedIndex === quiz?.correctAnswerIndex
 
   return (
-    <div className="space-y-6">
-      {/* ★ Sliced player */}
-      <SlicedYouTubePlayer
-        ref={playerRef}
-        ytVideoId={ytVideoId}
-        startTimeSeconds={startTimeSeconds}
-        endTimeSeconds={endTimeSeconds}
-        onSectionEnd={handleSectionEnd}
-        onTimeUpdate={handleTimeUpdate}
-        isCompleted={initiallyCompleted}
-        onNextSection={onNextSection}
-      />
+    <div className="flex flex-col w-full min-h-full">
+      {/* ★ Video Section - WHITE BACKGROUND */}
+      <div className={cn(
+        "w-full transition-all duration-500 ease-in-out bg-white dark:bg-slate-900 border-b",
+        isTheaterMode ? "py-0" : "py-6"
+      )}>
+        <div className={cn(
+          "mx-auto relative",
+          isTheaterMode ? "max-w-none w-full px-0" : "max-w-4xl px-4 md:px-6"
+        )}>
+          <SlicedYouTubePlayer
+            ref={playerRef}
+            ytVideoId={ytVideoId}
+            startTimeSeconds={startTimeSeconds}
+            endTimeSeconds={endTimeSeconds}
+            onSectionEnd={handleSectionEnd}
+            onTimeUpdate={handleTimeUpdate}
+            isCompleted={initiallyCompleted}
+            onNextSection={onNextSection}
+            isTheaterMode={isTheaterMode}
+            toggleTheater={() => setIsTheaterMode(!isTheaterMode)}
+          />
+        </div>
+      </div>
 
-      {/* Tabs Switcher */}
-      <div className="flex border-b border-muted">
-        <button
-          onClick={() => setActiveTab('summary')}
-          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === 'summary' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Summary
-        </button>
-        {filteredTranscript && filteredTranscript.length > 0 && (
+      {/* ★ Interactive Content Section */}
+      <div className="w-full max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8">
+        {/* Tabs Switcher */}
+        <div className="flex border-b border-muted">
           <button
-            onClick={() => setActiveTab('transcript')}
+            onClick={() => setActiveTab('summary')}
             className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === 'transcript' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              activeTab === 'summary' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            Transcript
+            Summary
           </button>
-        )}
-        <button
-          onClick={() => setActiveTab('notes')}
-          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === 'notes' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Notes
-        </button>
-      </div>
+          {filteredTranscript && filteredTranscript.length > 0 && (
+            <button
+              onClick={() => setActiveTab('transcript')}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === 'transcript' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Transcript
+            </button>
+          )}
+          <button
+            onClick={() => setActiveTab('notes')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'notes' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Notes
+          </button>
+        </div>
 
-      {/* Tab Content */}
-      <div className="min-h-[220px]">
-        {activeTab === 'summary' && textSummary && (
-          <Card>
-            <CardHeader><CardTitle className="text-base">Summary</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground leading-relaxed">{textSummary}</p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Tab Content */}
+        <div className="min-h-[200px]">
+          {activeTab === 'summary' && textSummary && (
+            <Card>
+              <CardHeader className="py-3 px-4"><CardTitle className="text-sm font-bold uppercase tracking-wider opacity-70">Summary</CardTitle></CardHeader>
+              <CardContent className="px-4 pb-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">{textSummary}</p>
+              </CardContent>
+            </Card>
+          )}
 
-        {activeTab === 'transcript' && filteredTranscript && (
-          <Card>
-            <CardContent className="p-0">
-              <div ref={scrollContainerRef} className="h-[200px] overflow-y-auto p-4 custom-scrollbar relative">
-                <div className="space-y-2">
-                  {filteredTranscript.map((segment, i) => (
-                    <div
-                      key={i}
-                      ref={(el) => { transcriptRefs.current[i] = el }}
-                      onClick={() => handleSeekVideo(segment.start)}
-                      className={`p-2 rounded-md cursor-pointer transition-all duration-300 hover:bg-muted/50 ${
-                        i === activeLineIndex ? 'bg-primary/10 font-bold text-primary text-base border-l-4 border-primary pl-3' : 'text-muted-foreground/70 text-sm border-l-4 border-transparent'
-                      }`}
-                    >
-                      <span>{segment.text}</span>
-                    </div>
-                  ))}
+          {activeTab === 'transcript' && filteredTranscript && (
+            <Card>
+              <CardContent className="p-0">
+                <div ref={scrollContainerRef} className="h-[200px] overflow-y-auto p-4 custom-scrollbar relative">
+                  <div className="space-y-2">
+                    {filteredTranscript.map((segment, i) => (
+                      <div
+                        key={i}
+                        ref={(el) => { transcriptRefs.current[i] = el }}
+                        onClick={() => handleSeekVideo(segment.start)}
+                        className={`p-2 rounded-md cursor-pointer transition-all duration-300 hover:bg-muted/50 ${
+                          i === activeLineIndex ? 'bg-primary/10 font-bold text-primary text-base border-l-4 border-primary pl-3' : 'text-muted-foreground/70 text-sm border-l-4 border-transparent'
+                        }`}
+                      >
+                        <span>{segment.text}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'notes' && (
+            <NotesTab 
+              sectionId={sectionId} 
+              getCurrentVideoTime={getCurrentTime} 
+              onSeekVideo={handleSeekVideo} 
+            />
+          )}
+        </div>
+
+        {/* Quiz Section */}
+        {quiz && (
+          <Card className={sectionEnded ? undefined : 'opacity-50 pointer-events-none'}>
+            <CardHeader className="py-3 px-4 flex flex-row items-center gap-2">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider opacity-70">Quick Quiz</CardTitle>
+              {!sectionEnded && <Badge variant="outline" className="text-[10px] uppercase">Watch to unlock</Badge>}
+            </CardHeader>
+            <CardContent className="space-y-3 px-4 pb-4">
+              <p className="font-medium text-sm">{quiz.questionText}</p>
+              <div className="space-y-2">
+                {quiz.options.map((option, i) => (
+                  <button
+                    key={i}
+                    onClick={() => !submitted && setSelectedIndex(i)}
+                    disabled={submitted}
+                    className={`w-full text-left rounded-lg border px-4 py-2 text-sm transition-colors
+                      ${(submitted && i === quiz.correctAnswerIndex) ? 'border-primary bg-primary/10 text-primary font-medium' : 
+                        (selectedIndex === i) ? (submitted ? 'border-destructive bg-destructive/10 text-destructive' : 'border-primary bg-primary/5') : 'hover:bg-muted'}
+                    `}
+                  >
+                    {option}
+                  </button>
+                ))}
               </div>
+              {submitted ? (
+                <p className={`text-sm font-medium ${isCorrectResult ? 'text-green-600' : 'text-destructive'}`}>
+                  {isCorrectResult ? '✓ Correct! +10 points' : `✗ Incorrect. The right answer was: ${quiz.options[quiz.correct_answer_index]}`}
+                </p>
+              ) : (
+                <Button onClick={handleSubmitQuiz} disabled={selectedIndex === null || saving || !sectionEnded} className="w-full h-9 text-sm">
+                  {saving ? 'Saving...' : 'Submit answer'}
+                </Button>
+              )}
+              {saveError && <p className="text-xs text-destructive">{saveError}</p>}
             </CardContent>
           </Card>
         )}
-
-        {activeTab === 'notes' && (
-          <NotesTab 
-            sectionId={sectionId} 
-            getCurrentVideoTime={getCurrentTime} 
-            onSeekVideo={handleSeekVideo} 
-          />
-        )}
       </div>
-
-      {/* Quiz Section */}
-      {quiz && (
-        <Card className={sectionEnded ? undefined : 'opacity-50 pointer-events-none'}>
-          <CardHeader className="flex flex-row items-center gap-2">
-            <CardTitle className="text-base">Quick Quiz</CardTitle>
-            {!sectionEnded && <Badge variant="outline" className="text-xs">Watch to unlock</Badge>}
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="font-medium text-sm">{quiz.questionText}</p>
-            <div className="space-y-2">
-              {quiz.options.map((option, i) => (
-                <button
-                  key={i}
-                  onClick={() => !submitted && setSelectedIndex(i)}
-                  disabled={submitted}
-                  className={`w-full text-left rounded-lg border px-4 py-2.5 text-sm transition-colors
-                    ${(submitted && i === quiz.correctAnswerIndex) ? 'border-primary bg-primary/10 text-primary font-medium' : 
-                      (selectedIndex === i) ? (submitted ? 'border-destructive bg-destructive/10 text-destructive' : 'border-primary bg-primary/5') : 'hover:bg-muted'}
-                  `}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-            {submitted ? (
-              <p className={`text-sm font-medium ${isCorrectResult ? 'text-green-600' : 'text-destructive'}`}>
-                {isCorrectResult ? '✓ Correct! +10 points' : `✗ Incorrect. The right answer was: ${quiz.options[quiz.correctAnswerIndex]}`}
-              </p>
-            ) : (
-              <Button onClick={handleSubmitQuiz} disabled={selectedIndex === null || saving || !sectionEnded} className="w-full">
-                {saving ? 'Saving...' : 'Submit answer'}
-              </Button>
-            )}
-            {saveError && <p className="text-xs text-destructive">{saveError}</p>}
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
