@@ -5,7 +5,6 @@ import { SlicedYouTubePlayer, SlicedYouTubePlayerRef } from '@/components/player
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { saveProgressAction } from '@/lib/actions/progress'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -54,8 +53,10 @@ export function SectionView({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'summary' | 'transcript'>('summary')
   const [currentTime, setCurrentTime] = useState(startTimeSeconds)
+  const [activeLineIndex, setActiveLineIndex] = useState(-1)
 
   const playerRef = useRef<SlicedYouTubePlayerRef>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const transcriptRefs = useRef<(HTMLDivElement | null)[]>([])
 
   // ── Filter transcript for this section ──────────────────────────────────
@@ -66,28 +67,36 @@ export function SectionView({
     )
   }, [transcript, startTimeSeconds, endTimeSeconds])
 
-  // ── Sync transcript scroll ───────────────────────────────────────────────
+  // ── Identify current line index based on time ───────────────────────────
   useEffect(() => {
-    if (activeTab === 'transcript' && filteredTranscript) {
-      const activeIndex = filteredTranscript.findIndex(
-        (s) => currentTime >= s.start && currentTime <= s.end
-      )
+    if (!filteredTranscript) return
+    const index = filteredTranscript.findIndex(
+      (s) => currentTime >= s.start && currentTime <= s.end
+    )
+    if (index !== -1 && index !== activeLineIndex) {
+      setActiveLineIndex(index)
+    }
+  }, [currentTime, filteredTranscript, activeLineIndex])
+
+  // ── Trigger scroll only when activeLineIndex changes ────────────────────
+  useEffect(() => {
+    if (activeTab === 'transcript' && activeLineIndex !== -1 && scrollContainerRef.current) {
+      // Para manter a linha ativa como a segunda, focamos na anterior (index - 1)
+      const scrollTargetIndex = Math.max(0, activeLineIndex - 1)
+      const element = transcriptRefs.current[scrollTargetIndex]
+      const container = scrollContainerRef.current
       
-      if (activeIndex !== -1) {
-        // Para fazer com que a linha ativa seja a SEGUNDA, 
-        // nós rolamos para a linha ANTERIOR (se existir)
-        const scrollTargetIndex = Math.max(0, activeIndex - 1)
-        const element = transcriptRefs.current[scrollTargetIndex]
+      if (element && container) {
+        // element.offsetTop é relativo ao container pois adicionamos 'relative' nele
+        const targetScrollTop = element.offsetTop - 16 // 16px offset pelo padding
         
-        if (element) {
-          element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start', // Alinha o topo da linha anterior com o topo do bloco
-          })
-        }
+        container.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        })
       }
     }
-  }, [currentTime, activeTab, filteredTranscript])
+  }, [activeLineIndex, activeTab])
 
   // ── When the sliced player reaches end_time ───────────────────────────────
   const handleSectionEnd = useCallback(async () => {
@@ -189,28 +198,30 @@ export function SectionView({
         {activeTab === 'transcript' && filteredTranscript && (
           <Card>
             <CardContent className="p-0">
-              <ScrollArea className="h-[200px] p-4">
+              <div 
+                ref={scrollContainerRef}
+                className="h-[200px] overflow-y-auto p-4 custom-scrollbar relative"
+              >
                 <div className="space-y-2">
                   {filteredTranscript.map((segment, i) => {
-                    const isActive = currentTime >= segment.start && currentTime <= segment.end
+                    const isActive = i === activeLineIndex
                     return (
                       <div
                         key={i}
                         ref={(el) => { transcriptRefs.current[i] = el }}
                         onClick={() => handleTranscriptClick(segment.start)}
-                        className={`p-2 rounded-md cursor-pointer transition-colors hover:bg-muted/50 ${
-                          isActive ? 'bg-primary/10 font-bold text-primary' : 'text-muted-foreground'
+                        className={`p-2 rounded-md cursor-pointer transition-all duration-300 hover:bg-muted/50 ${
+                          isActive 
+                            ? 'bg-primary/10 font-bold text-primary text-base border-l-4 border-primary pl-3' 
+                            : 'text-muted-foreground/70 text-sm border-l-4 border-transparent'
                         }`}
                       >
-                        <span className="text-xs opacity-50 mr-3 tabular-nums">
-                          {Math.floor(segment.start / 60)}:{(segment.start % 60).toFixed(0).padStart(2, '0')}
-                        </span>
-                        <span className="text-sm">{segment.text}</span>
+                        <span>{segment.text}</span>
                       </div>
                     )
                   })}
                 </div>
-              </ScrollArea>
+              </div>
             </CardContent>
           </Card>
         )}
