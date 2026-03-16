@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { UserProgressInsert } from '@/types/database'
 
 interface SaveProgressArgs {
@@ -54,6 +55,48 @@ export async function saveProgressAction({
       p_user_id: user.id,
       p_delta: quizScore ?? 10,
     })
+
+    // Check for Course Completion & Issue Certificate
+    try {
+      // 1. Get the course_id for this section
+      const { data: section } = await (supabase as any)
+        .from('course_sections')
+        .select('course_id')
+        .eq('id', sectionId)
+        .single()
+
+      if (section && 'course_id' in section) {
+        const courseId = section.course_id as string
+
+        // 2. Count total sections in course
+        const { count: totalSections } = await supabase
+          .from('course_sections')
+          .select('*', { count: 'exact', head: true })
+          .eq('course_id', courseId)
+
+        // 3. Count completed sections by this user
+        // We join with course_sections to ensure we only count sections for THIS course
+        const { count: completedSections } = await (supabase as any)
+          .from('user_progress')
+          .select('section_id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('is_completed', true)
+          .in('section_id', 
+            (await (supabase as any).from('course_sections').select('id').eq('course_id', courseId)).data?.map((s: any) => s.id) || []
+          )
+
+        if (totalSections && completedSections && completedSections >= totalSections) {
+          // 4. All sections done! Issue certificate using Admin client for reliability
+          const adminDb = createAdminClient()
+          await (adminDb as any).from('certificates').upsert(
+            { user_id: user.id, course_id: courseId },
+            { onConflict: 'user_id,course_id' }
+          )
+        }
+      }
+    } catch (e) {
+      console.error('Error issuing certificate:', e)
+    }
   }
 
   return {}

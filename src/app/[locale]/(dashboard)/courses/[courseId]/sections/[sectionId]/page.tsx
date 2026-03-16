@@ -183,7 +183,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       />
 
       {/* Next lesson CTA (Bottom) */}
-      {nextSection && (
+      {nextSection ? (
         <div className="rounded-xl border bg-muted/30 p-4 flex items-center justify-between gap-4 mt-8">
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground mb-0.5">Up next</p>
@@ -195,6 +195,22 @@ export default async function SectionPage({ params }: SectionPageProps) {
           >
             <PlayCircle className="w-4 h-4" />
             Next
+          </Link>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 flex flex-col items-center text-center gap-4 mt-8">
+          <div className="space-y-1">
+            <p className="text-amber-600 dark:text-amber-500 font-bold flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-5 h-5" />
+              You've reached the end!
+            </p>
+            <p className="text-sm text-muted-foreground">Complete this final lesson to claim your certificate.</p>
+          </div>
+          <Link
+            href={`/${locale}/courses/${courseId}`}
+            className="flex items-center gap-1.5 bg-amber-500 text-white text-sm font-bold px-6 py-3 rounded-lg hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
+          >
+            Finish Course
           </Link>
         </div>
       )}
