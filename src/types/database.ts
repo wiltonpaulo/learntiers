@@ -69,6 +69,14 @@ export interface UserNoteRow {
   created_at: string
 }
 
+export interface CertificateRow {
+  id: string
+  user_id: string
+  course_id: string
+  verification_code: string
+  issued_at: string
+}
+
 // ─── Insert types ─────────────────────────────────────────────────────────────
 
 export type UserInsert = Omit<UserRow, 'created_at'>
@@ -77,6 +85,7 @@ export type CourseSectionInsert = Omit<CourseSectionRow, 'id' | 'created_at'>
 export type QuizInsert = Omit<QuizRow, 'id' | 'created_at'>
 export type UserProgressInsert = Omit<UserProgressRow, 'updated_at'>
 export type UserNoteInsert = Omit<UserNoteRow, 'id' | 'created_at'>
+export type CertificateInsert = Omit<CertificateRow, 'id' | 'verification_code' | 'issued_at'>
 
 // ─── Supabase Database shape (for createClient generics) ─────────────────────
 
@@ -112,6 +121,11 @@ export interface Database {
         Row: UserNoteRow
         Insert: UserNoteInsert
         Update: Partial<UserNoteInsert>
+      }
+      certificates: {
+        Row: CertificateRow
+        Insert: CertificateInsert
+        Update: Partial<CertificateInsert>
       }
     }
     Views: Record<string, never>

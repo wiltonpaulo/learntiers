@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Trophy, BookOpen, Globe, Mail, User } from 'lucide-react'
 import type { UserRow } from '@/types/database'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 
 export default async function ProfilePage() {
@@ -13,7 +15,7 @@ export default async function ProfilePage() {
 
   if (!user) redirect(`/${locale}/login`)
 
-  const [profileRes, progressRes] = await Promise.all([
+  const [profileRes, progressRes, certificatesRes, coursesRes] = await Promise.all([
     supabase
       .from('users')
       .select('name, email, total_score, country')
@@ -21,12 +23,56 @@ export default async function ProfilePage() {
       .single(),
     supabase
       .from('user_progress')
-      .select('is_completed, quiz_score')
+      .select('section_id, is_completed, quiz_score')
       .eq('user_id', user.id),
+    supabase
+      .from('certificates')
+      .select('course_id, verification_code, issued_at, courses(title)')
+      .eq('user_id', user.id)
+      .order('issued_at', { ascending: false }),
+    supabase
+      .from('courses')
+      .select('id, title, course_sections(id)')
   ])
 
   const profile = profileRes.data as Pick<UserRow, 'name' | 'email' | 'total_score' | 'country'> | null
-  const progress = progressRes.data ?? []
+  const progress = (progressRes.data ?? []) as any[]
+  let certificates = (certificatesRes.data ?? []) as any[]
+  const allCourses = (coursesRes.data ?? []) as any[]
+
+  // --- Auto-issue missing certificates ---
+  const completedSectionIds = new Set(progress.filter(p => p.is_completed).map(p => p.section_id))
+  const existingCertCourseIds = new Set(certificates.map(c => c.course_id))
+  
+  const newlyIssuedCerts: any[] = []
+
+  for (const course of allCourses) {
+    const sectionIds = (course.course_sections || []).map((s: any) => s.id)
+    if (sectionIds.length === 0) continue
+
+    const isFinished = sectionIds.every((id: string) => completedSectionIds.has(id))
+    
+    if (isFinished && !existingCertCourseIds.has(course.id)) {
+      // Issue missing certificate using Admin client for reliability
+      const adminDb = createAdminClient()
+      const { data: newCert } = await (adminDb as any)
+        .from('certificates')
+        .upsert({ user_id: user.id, course_id: course.id }, { onConflict: 'user_id,course_id' })
+        .select('course_id, verification_code, issued_at, courses(title)')
+        .single()
+      
+      if (newCert) {
+        newlyIssuedCerts.push(newCert)
+      }
+    }
+  }
+
+  if (newlyIssuedCerts.length > 0) {
+    certificates = [...newlyIssuedCerts, ...certificates].sort((a, b) => 
+      new Date(b.issued_at).getTime() - new Date(a.issued_at).getTime()
+    )
+  }
+  // ----------------------------------------
 
   const completed = progress.filter((p: { is_completed: boolean }) => p.is_completed).length
   const avgScore = progress.length > 0
@@ -91,6 +137,46 @@ export default async function ProfilePage() {
                 <span className="text-muted-foreground text-sm">Not set</span>
               )}
             />
+          </div>
+        </div>
+
+        {/* Certificates Section */}
+        <div className="rounded-xl border overflow-hidden">
+          <div className="px-5 py-4 border-b bg-muted/30 flex items-center justify-between">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-amber-500" />
+              My Certificates
+            </h2>
+            <Badge variant="secondary" className="text-[10px] font-bold uppercase">{certificates.length}</Badge>
+          </div>
+          <div className="divide-y">
+            {certificates.length > 0 ? (
+              certificates.map((cert) => (
+                <div key={cert.verification_code} className="px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors group">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                      {cert.courses?.title || 'Unknown Course'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                      Issued on {new Date(cert.issued_at).toLocaleDateString(locale, { dateStyle: 'long' })}
+                    </p>
+                  </div>
+                  <Link 
+                    href={`/${locale}/verify/${cert.verification_code}`}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    View Certificate
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="px-5 py-10 text-center space-y-2">
+                <p className="text-sm text-muted-foreground">No certificates earned yet.</p>
+                <Link href={`/${locale}/courses`} className="text-xs text-primary font-bold hover:underline">
+                  Browse courses to start learning
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

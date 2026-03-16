@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
@@ -24,7 +25,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
 
   const loginMessage = encodeURIComponent('Log in or create a free account to start learning.')
 
-  const [courseRes, sectionsRes, progressRes] = await Promise.all([
+  const [courseRes, sectionsRes, progressRes, certificateRes] = await Promise.all([
     supabase.from('courses').select('*').eq('id', courseId).single(),
     supabase
       .from('course_sections')
@@ -32,11 +33,13 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
       .eq('course_id', courseId)
       .order('order_index'),
     user ? supabase.from('user_progress').select('section_id, is_completed').eq('user_id', user.id) : null,
+    user ? supabase.from('certificates').select('*').eq('user_id', user.id).eq('course_id', courseId).single() : null,
   ])
 
   const course = courseRes.data as CourseRow | null
   const sections = (sectionsRes.data ?? []) as Pick<CourseSectionRow, 'id' | 'title' | 'start_time_seconds' | 'end_time_seconds'>[]
   const userProgress = (progressRes?.data ?? []) as Pick<UserProgressRow, 'section_id' | 'is_completed'>[]
+  let certificate = certificateRes?.data as any | null
 
   if (!course) {
     notFound()
@@ -52,6 +55,18 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
       .map((p) => p.section_id)
   )
   const completedCount = completedSet.size
+  const is100Percent = sections.length > 0 && completedCount >= sections.length
+
+  // Auto-issue certificate if 100% done but no certificate record found
+  if (is100Percent && !certificate && user) {
+    const adminDb = createAdminClient()
+    const { data: newCert } = await (adminDb as any)
+      .from('certificates')
+      .upsert({ user_id: user.id, course_id: courseId }, { onConflict: 'user_id,course_id' })
+      .select('*')
+      .single()
+    if (newCert) certificate = newCert
+  }
 
   const firstIncomplete = sections.find((s) => !completedSet.has(s.id))
   const ctaSection = firstIncomplete ?? sections[0]
@@ -198,6 +213,16 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                   >
                     {isLoggedIn ? (completedCount > 0 ? 'Continue Learning' : 'Start Course') : 'Log in to Start'}
                   </Link>
+
+                  {certificate && (
+                    <Link
+                      href={`/${locale}/verify/${certificate.verification_code}`}
+                      className="flex w-full items-center justify-center gap-2 bg-amber-500 text-white rounded-none py-4 text-base font-bold hover:bg-amber-600 transition-all"
+                    >
+                      <Trophy className="w-5 h-5" />
+                      View Certificate
+                    </Link>
+                  )}
 
                   <div className="space-y-4 text-sm text-muted-foreground pt-2">
                     <p className="font-semibold text-foreground text-base">This course includes:</p>
