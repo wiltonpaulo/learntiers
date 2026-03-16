@@ -29,6 +29,7 @@ interface SectionViewProps {
     correctAnswerIndex: number
   } | null
   initiallyCompleted: boolean
+  onNextSection?: () => void
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ export function SectionView({
   transcript,
   quiz,
   initiallyCompleted,
+  onNextSection,
 }: SectionViewProps) {
   const [sectionEnded, setSectionEnded] = useState(initiallyCompleted)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
@@ -81,14 +83,12 @@ export function SectionView({
   // ── Trigger scroll only when activeLineIndex changes ────────────────────
   useEffect(() => {
     if (activeTab === 'transcript' && activeLineIndex !== -1 && scrollContainerRef.current) {
-      // Para manter a linha ativa como a segunda, focamos na anterior (index - 1)
       const scrollTargetIndex = Math.max(0, activeLineIndex - 1)
       const element = transcriptRefs.current[scrollTargetIndex]
       const container = scrollContainerRef.current
       
       if (element && container) {
-        // element.offsetTop é relativo ao container pois adicionamos 'relative' nele
-        const targetScrollTop = element.offsetTop - 16 // 16px offset pelo padding
+        const targetScrollTop = element.offsetTop - 16
         
         container.scrollTo({
           top: targetScrollTop,
@@ -102,7 +102,6 @@ export function SectionView({
   const handleSectionEnd = useCallback(async () => {
     setSectionEnded(true)
 
-    // Persist completion (no quiz score yet) immediately
     const { error } = await saveProgressAction({
       sectionId,
       isCompleted: true,
@@ -141,7 +140,7 @@ export function SectionView({
     }
   }
 
-  const isCorrect = submitted && selectedIndex === quiz?.correctAnswerIndex
+  const isCorrectResult = submitted && selectedIndex === quiz?.correctAnswerIndex
 
   return (
     <div className="space-y-6">
@@ -154,6 +153,7 @@ export function SectionView({
         onSectionEnd={handleSectionEnd}
         onTimeUpdate={handleTimeUpdate}
         isCompleted={initiallyCompleted}
+        onNextSection={onNextSection}
       />
 
       {/* Tabs Switcher */}
@@ -271,9 +271,9 @@ export function SectionView({
 
             {submitted ? (
               <p
-                className={`text-sm font-medium ${isCorrect ? 'text-green-600' : 'text-destructive'}`}
+                className={`text-sm font-medium ${isCorrectResult ? 'text-green-600' : 'text-destructive'}`}
               >
-                {isCorrect ? '✓ Correct! +10 points' : `✗ Incorrect. The right answer was: ${quiz.options[quiz.correctAnswerIndex]}`}
+                {isCorrectResult ? '✓ Correct! +10 points' : `✗ Incorrect. The right answer was: ${quiz.options[quiz.correctAnswerIndex]}`}
               </p>
             ) : (
               <Button

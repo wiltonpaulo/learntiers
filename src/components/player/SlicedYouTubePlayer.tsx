@@ -4,24 +4,20 @@ import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardR
 import ReactPlayer from 'react-player'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
+import { CheckCircle, RotateCcw, ArrowRight } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface SlicedYouTubePlayerProps {
-  /** YouTube video ID, e.g. "dQw4w9WgXcQ" */
   ytVideoId: string
-  /** Second at which playback begins */
   startTimeSeconds: number
-  /** Second at which playback must stop — fires onSectionEnd */
   endTimeSeconds: number
-  /** Called when the player reaches endTimeSeconds */
   onSectionEnd?: () => void
-  /** Called when the user manually pauses (optional) */
   onPause?: () => void
-  /** Called periodically with current playback time in seconds */
   onTimeUpdate?: (currentTime: number) => void
-  /** Whether the section has already been completed by this user */
   isCompleted?: boolean
+  onNextSection?: () => void // Callback para o botão de próximo tópico
 }
 
 export interface SlicedYouTubePlayerRef {
@@ -30,18 +26,8 @@ export interface SlicedYouTubePlayerRef {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const POLL_INTERVAL_MS = 100 // increased frequency for better sync
+const POLL_INTERVAL_MS = 100 
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-/**
- * SlicedYouTubePlayer
- *
- * Core business rule: plays only the window [startTimeSeconds, endTimeSeconds]
- * of a YouTube video. When the player reaches endTimeSeconds it pauses
- * automatically and fires `onSectionEnd` — preventing the student from
- * watching beyond the curated micro-lesson.
- */
 export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouTubePlayerProps>(
   ({
     ytVideoId,
@@ -51,6 +37,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     onPause,
     onTimeUpdate,
     isCompleted = false,
+    onNextSection,
   }, ref) => {
     const playerRef = useRef<InstanceType<typeof ReactPlayer>>(null)
     const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -58,28 +45,36 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     const [playing, setPlaying] = useState(false)
     const [ready, setReady] = useState(false)
     const [sectionEnded, setSectionEnded] = useState(isCompleted)
-    const [progress, setProgress] = useState(0) // 0–100
+    const [progress, setProgress] = useState(isCompleted ? 100 : 0)
 
     const sectionDuration = endTimeSeconds - startTimeSeconds
 
     useImperativeHandle(ref, () => ({
       seekTo: (seconds: number) => {
-        playerRef.current?.seekTo(seconds, 'seconds')
-        setPlaying(true)
         setSectionEnded(false)
+        // Pequeno delay para garantir que o player foi re-renderizado antes do seek
+        setTimeout(() => {
+          playerRef.current?.seekTo(seconds, 'seconds')
+          setPlaying(true)
+        }, 50)
       }
     }))
 
-    // ── Seek to start once player is ready ────────────────────────────────────
+    const handleRestart = useCallback(() => {
+      setSectionEnded(false)
+      setProgress(0)
+      setReady(false) // Força o re-trigger do onReady
+    }, [])
+
     const handleReady = useCallback(() => {
       playerRef.current?.seekTo(startTimeSeconds, 'seconds')
       setReady(true)
       setPlaying(true)
     }, [startTimeSeconds])
 
-    // ── Poll playback position ────────────────────────────────────────────────
+    // ── Polling de posição ────────────────────────────────────────────────────
     useEffect(() => {
-      if (!ready) return
+      if (!ready || sectionEnded) return
 
       pollerRef.current = setInterval(() => {
         const player = playerRef.current
@@ -88,7 +83,6 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
         const currentTime = player.getCurrentTime()
         onTimeUpdate?.(currentTime)
 
-        // Guard: if the user somehow seeked before the start window, snap back.
         if (currentTime < startTimeSeconds) {
           player.seekTo(startTimeSeconds, 'seconds')
           return
@@ -98,12 +92,12 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
         const pct = Math.min((elapsed / sectionDuration) * 100, 100)
         setProgress(pct)
 
-        // ★ Core rule: stop at end_time_seconds
+        // ★ Gatilho de Conclusão
         if (currentTime >= endTimeSeconds) {
           setPlaying(false)
           setSectionEnded(true)
           onSectionEnd?.()
-
+          
           if (pollerRef.current) {
             clearInterval(pollerRef.current)
             pollerRef.current = null
@@ -114,9 +108,8 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
       return () => {
         if (pollerRef.current) clearInterval(pollerRef.current)
       }
-    }, [ready, startTimeSeconds, endTimeSeconds, sectionDuration, onSectionEnd, onTimeUpdate])
+    }, [ready, sectionEnded, startTimeSeconds, endTimeSeconds, sectionDuration, onSectionEnd, onTimeUpdate])
 
-    // ── Prevent seeking past the end window ───────────────────────────────────
     const handleSeek = useCallback(
       (seconds: number) => {
         if (seconds > endTimeSeconds) {
@@ -126,78 +119,89 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
       [startTimeSeconds, endTimeSeconds],
     )
 
-    const handlePause = useCallback(() => {
-      setPlaying(false)
-      onPause?.()
-    }, [onPause])
-
-    const handlePlay = useCallback(() => {
-      // Don't allow re-play after section has ended unless the caller resets
-      if (!sectionEnded) setPlaying(true)
-    }, [sectionEnded])
-
     const youtubeUrl = `https://www.youtube.com/watch?v=${ytVideoId}`
 
     return (
-      <div className="flex flex-col gap-3 w-full">
-        {/* Player wrapper */}
-        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-lg">
-          <ReactPlayer
-            ref={playerRef}
-            url={youtubeUrl}
-            playing={playing}
-            controls={true}
-            width="100%"
-            height="100%"
-            onReady={handleReady}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onSeek={handleSeek}
-            config={{
-              youtube: {
-                playerVars: {
-                  // Start at section start — our poller is the authoritative gate for end
-                  start: startTimeSeconds,
-                  end: endTimeSeconds,
-                  rel: 0,             // no related videos at the end
-                  modestbranding: 1,
+      <div className="flex flex-col gap-4 w-full">
+        {/* Proporção 16:9 Fixa */}
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-900 shadow-2xl border border-white/5">
+          
+          {!sectionEnded ? (
+            /* PLAYER ATIVO */
+            <ReactPlayer
+              ref={playerRef}
+              url={youtubeUrl}
+              playing={playing}
+              controls={true}
+              width="100%"
+              height="100%"
+              onReady={handleReady}
+              onPlay={() => setPlaying(true)}
+              onPause={() => { setPlaying(false); onPause?.(); }}
+              onSeek={handleSeek}
+              config={{
+                youtube: {
+                  playerVars: {
+                    start: startTimeSeconds,
+                    end: endTimeSeconds,
+                    rel: 0,
+                    modestbranding: 1,
+                    iv_load_policy: 3, // Oculta anotações
+                  },
                 },
-              },
-            }}
-          />
+              }}
+            />
+          ) : (
+            /* INTERFACE DE CONCLUSÃO (Player Desmontado) */
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 animate-in fade-in zoom-in duration-500 text-center px-6">
+              <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="w-12 h-12 text-emerald-500" />
+              </div>
+              
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                Seção Concluída!
+              </h2>
+              
+              <p className="text-slate-400 text-sm md:text-base max-w-md mb-8">
+                Você finalizou este tópico. Teste seus conhecimentos no quiz abaixo ou avance para a próxima aula.
+              </p>
 
-          {/* Overlay shown when section ends */}
-          {sectionEnded && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-3">
-              <Badge variant="secondary" className="text-base px-4 py-2">
-                ✅ Section complete — answer the quiz to continue!
-              </Badge>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={handleRestart}
+                  className="bg-transparent border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Refazer Aula
+                </Button>
+                
+                {onNextSection && (
+                  <Button 
+                    onClick={onNextSection}
+                    className="bg-primary hover:bg-primary/90 text-white font-bold"
+                  >
+                    Próximo Tópico
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Progress bar */}
-        <div className="flex items-center gap-3">
-          <Progress value={progress} className="flex-1 h-2" />
-          <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-            {formatTime(startTimeSeconds + (sectionDuration * progress) / 100)} /{' '}
-            {formatTime(endTimeSeconds)}
-          </span>
-        </div>
+        {/* Barra de Progresso customizada */}
+        {!sectionEnded && (
+          <div className="flex items-center gap-3 px-1">
+            <Progress value={progress} className="flex-1 h-1.5 bg-slate-800" />
+            <span className="text-[10px] font-mono text-slate-500 tabular-nums uppercase tracking-widest">
+              {progress.toFixed(0)}% completo
+            </span>
+          </div>
+        )}
       </div>
     )
   }
 )
 
 SlicedYouTubePlayer.displayName = 'SlicedYouTubePlayer'
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatTime(totalSeconds: number): string {
-  const s = Math.floor(totalSeconds)
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const sec = s % 60
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`
-}

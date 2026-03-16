@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { SectionView, TranscriptSegment } from '@/components/course/SectionView'
@@ -131,6 +131,14 @@ export default async function SectionPage({ params }: SectionPageProps) {
     </div>
   )
 
+  // Use a redirect logic for the Next button inside SectionView
+  const nextSectionAction = async () => {
+    'use server'
+    if (nextSection) {
+      redirect(`/${locale}/courses/${courseId}/sections/${nextSection.id}`)
+    }
+  }
+
   return (
     <SectionLayoutClient
       header={header}
@@ -156,9 +164,10 @@ export default async function SectionPage({ params }: SectionPageProps) {
             : null
         }
         initiallyCompleted={completedSet.has(section.id)}
+        onNextSection={nextSection ? nextSectionAction : undefined}
       />
 
-      {/* Next lesson CTA */}
+      {/* Next lesson CTA (Bottom) */}
       {nextSection && (
         <div className="rounded-xl border bg-muted/30 p-4 flex items-center justify-between gap-4 mt-8">
           <div className="min-w-0">
