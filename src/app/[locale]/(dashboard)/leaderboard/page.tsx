@@ -1,10 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { Trophy, Medal } from 'lucide-react'
 import type { UserRow } from '@/types/database'
+import { redirect } from 'next/navigation'
+import { getLocale } from 'next-intl/server'
 
 export default async function LeaderboardPage() {
+  const locale = await getLocale()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) redirect(`/${locale}/login`)
 
   const { data: users, error } = await supabase
     .from('users')

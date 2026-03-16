@@ -18,6 +18,11 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  if (!user) {
+    const loginMessage = encodeURIComponent('Please log in or create an account to view this lesson.')
+    redirect(`/${locale}/login?message=${loginMessage}`)
+  }
+
   const [courseRes, sectionRes, allSectionsRes, quizRes, progressRes] = await Promise.all([
     supabase
       .from('courses')

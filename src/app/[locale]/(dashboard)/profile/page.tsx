@@ -3,12 +3,15 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Trophy, BookOpen, Globe, Mail, User } from 'lucide-react'
 import type { UserRow } from '@/types/database'
+import { redirect } from 'next/navigation'
+import { getLocale } from 'next-intl/server'
 
 export default async function ProfilePage() {
+  const locale = await getLocale()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) return <p className="p-8 text-muted-foreground text-sm">Not authenticated.</p>
+  if (!user) redirect(`/${locale}/login`)
 
   const [profileRes, progressRes] = await Promise.all([
     supabase
