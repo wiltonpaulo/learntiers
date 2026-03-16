@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/lib/actions/auth'
 import { BookOpen, Trophy, User, LogOut, GraduationCap } from 'lucide-react'
@@ -12,6 +13,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect(`/${locale}/login`)
+
+  // Detect if we are in a course section page to hide footer and manage height
+  const headersList = await headers()
+  const fullPath = headersList.get('x-url') || ''
+  const isSectionPage = fullPath.includes('/sections/')
 
   const { data } = await supabase
     .from('users')
@@ -28,7 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen flex flex-col bg-background">
       {/* ── Dark top navigation (Udemy-style) ─────────────────────────────── */}
       <header
-        className="sticky top-0 z-50 h-14 flex items-center"
+        className="sticky top-0 z-50 h-14 flex items-center shrink-0"
         style={{ backgroundColor: 'var(--nav-bg)', color: 'var(--nav-fg)' }}
       >
         <div className="container mx-auto flex items-center justify-between gap-4 px-4">
@@ -84,14 +90,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </header>
 
       {/* Page content */}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 min-h-0">{children}</main>
 
-      {/* Footer */}
-      <footer className="border-t py-6 mt-auto">
-        <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} LearnTiers · Learn smarter, one micro-lesson at a time.
-        </div>
-      </footer>
+      {/* Footer (hidden on section pages to allow independent internal scrolls) */}
+      {!isSectionPage && (
+        <footer className="border-t py-6 mt-auto shrink-0">
+          <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
+            © {new Date().getFullYear()} LearnTiers · Learn smarter, one micro-lesson at a time.
+          </div>
+        </footer>
+      )}
     </div>
   )
 }
