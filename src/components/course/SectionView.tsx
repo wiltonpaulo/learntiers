@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { saveProgressAction } from '@/lib/actions/progress'
+import { NotesTab } from './NotesTab'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,8 +33,6 @@ interface SectionViewProps {
   onNextSection?: () => void
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 /**
  * SectionView — Client Component that owns the learning UX for a single section.
  */
@@ -53,7 +52,7 @@ export function SectionView({
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'summary' | 'transcript'>('summary')
+  const [activeTab, setActiveTab] = useState<'summary' | 'transcript' | 'notes'>('summary')
   const [currentTime, setCurrentTime] = useState(startTimeSeconds)
   const [activeLineIndex, setActiveLineIndex] = useState(-1)
 
@@ -89,19 +88,13 @@ export function SectionView({
       
       if (element && container) {
         const targetScrollTop = element.offsetTop - 16
-        
-        container.scrollTo({
-          top: targetScrollTop,
-          behavior: 'smooth'
-        })
+        container.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
       }
     }
   }, [activeLineIndex, activeTab])
 
-  // ── When the sliced player reaches end_time ───────────────────────────────
   const handleSectionEnd = useCallback(async () => {
     setSectionEnded(true)
-
     const { error } = await saveProgressAction({
       sectionId,
       isCompleted: true,
@@ -114,30 +107,26 @@ export function SectionView({
     setCurrentTime(time)
   }, [])
 
-  const handleTranscriptClick = (startTime: number) => {
-    playerRef.current?.seekTo(startTime)
+  const handleSeekVideo = (seconds: number) => {
+    playerRef.current?.seekTo(seconds)
   }
+
+  const getCurrentTime = () => currentTime
 
   // ── Quiz submission ────────────────────────────────────────────────────────
   const handleSubmitQuiz = async () => {
     if (selectedIndex === null || !quiz) return
     setSaving(true)
-
     const isCorrect = selectedIndex === quiz.correctAnswerIndex
     const score = isCorrect ? 10 : 0
-
     const { error } = await saveProgressAction({
       sectionId,
       isCompleted: true,
       quizScore: score,
     })
-
     setSaving(false)
-    if (error) {
-      setSaveError(error)
-    } else {
-      setSubmitted(true)
-    }
+    if (error) setSaveError(error)
+    else setSubmitted(true)
   }
 
   const isCorrectResult = submitted && selectedIndex === quiz?.correctAnswerIndex
@@ -161,9 +150,7 @@ export function SectionView({
         <button
           onClick={() => setActiveTab('summary')}
           className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === 'summary'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+            activeTab === 'summary' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           Summary
@@ -172,23 +159,27 @@ export function SectionView({
           <button
             onClick={() => setActiveTab('transcript')}
             className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === 'transcript'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+              activeTab === 'transcript' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             Transcript
           </button>
         )}
+        <button
+          onClick={() => setActiveTab('notes')}
+          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === 'notes' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Notes
+        </button>
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[180px]">
+      <div className="min-h-[220px]">
         {activeTab === 'summary' && textSummary && (
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Summary</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-base">Summary</CardTitle></CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground leading-relaxed">{textSummary}</p>
             </CardContent>
@@ -198,96 +189,69 @@ export function SectionView({
         {activeTab === 'transcript' && filteredTranscript && (
           <Card>
             <CardContent className="p-0">
-              <div 
-                ref={scrollContainerRef}
-                className="h-[200px] overflow-y-auto p-4 custom-scrollbar relative"
-              >
+              <div ref={scrollContainerRef} className="h-[200px] overflow-y-auto p-4 custom-scrollbar relative">
                 <div className="space-y-2">
-                  {filteredTranscript.map((segment, i) => {
-                    const isActive = i === activeLineIndex
-                    return (
-                      <div
-                        key={i}
-                        ref={(el) => { transcriptRefs.current[i] = el }}
-                        onClick={() => handleTranscriptClick(segment.start)}
-                        className={`p-2 rounded-md cursor-pointer transition-all duration-300 hover:bg-muted/50 ${
-                          isActive 
-                            ? 'bg-primary/10 font-bold text-primary text-base border-l-4 border-primary pl-3' 
-                            : 'text-muted-foreground/70 text-sm border-l-4 border-transparent'
-                        }`}
-                      >
-                        <span>{segment.text}</span>
-                      </div>
-                    )
-                  })}
+                  {filteredTranscript.map((segment, i) => (
+                    <div
+                      key={i}
+                      ref={(el) => { transcriptRefs.current[i] = el }}
+                      onClick={() => handleSeekVideo(segment.start)}
+                      className={`p-2 rounded-md cursor-pointer transition-all duration-300 hover:bg-muted/50 ${
+                        i === activeLineIndex ? 'bg-primary/10 font-bold text-primary text-base border-l-4 border-primary pl-3' : 'text-muted-foreground/70 text-sm border-l-4 border-transparent'
+                      }`}
+                    >
+                      <span>{segment.text}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {activeTab === 'notes' && (
+          <NotesTab 
+            sectionId={sectionId} 
+            getCurrentVideoTime={getCurrentTime} 
+            onSeekVideo={handleSeekVideo} 
+          />
+        )}
       </div>
 
-      {/* Quiz — locked until section ends */}
+      {/* Quiz Section */}
       {quiz && (
         <Card className={sectionEnded ? undefined : 'opacity-50 pointer-events-none'}>
           <CardHeader className="flex flex-row items-center gap-2">
             <CardTitle className="text-base">Quick Quiz</CardTitle>
-            {!sectionEnded && (
-              <Badge variant="outline" className="text-xs">
-                Watch to unlock
-              </Badge>
-            )}
+            {!sectionEnded && <Badge variant="outline" className="text-xs">Watch to unlock</Badge>}
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="font-medium text-sm">{quiz.questionText}</p>
-
             <div className="space-y-2">
-              {quiz.options.map((option, i) => {
-                let variant: 'outline' | 'secondary' | 'default' = 'outline'
-                if (submitted) {
-                  if (i === quiz.correctAnswerIndex) variant = 'default'
-                  else if (i === selectedIndex) variant = 'secondary'
-                } else if (i === selectedIndex) {
-                  variant = 'secondary'
-                }
-
-                return (
-                  <button
-                    key={i}
-                    onClick={() => !submitted && setSelectedIndex(i)}
-                    disabled={submitted}
-                    className={`w-full text-left rounded-lg border px-4 py-2.5 text-sm transition-colors
-                      ${variant === 'default' ? 'border-primary bg-primary/10 text-primary font-medium' : ''}
-                      ${variant === 'secondary' && !submitted ? 'border-primary bg-primary/5' : ''}
-                      ${variant === 'secondary' && submitted ? 'border-destructive bg-destructive/10 text-destructive' : ''}
-                      ${variant === 'outline' ? 'hover:bg-muted' : ''}
-                    `}
-                  >
-                    {option}
-                  </button>
-                )
-              })}
+              {quiz.options.map((option, i) => (
+                <button
+                  key={i}
+                  onClick={() => !submitted && setSelectedIndex(i)}
+                  disabled={submitted}
+                  className={`w-full text-left rounded-lg border px-4 py-2.5 text-sm transition-colors
+                    ${(submitted && i === quiz.correctAnswerIndex) ? 'border-primary bg-primary/10 text-primary font-medium' : 
+                      (selectedIndex === i) ? (submitted ? 'border-destructive bg-destructive/10 text-destructive' : 'border-primary bg-primary/5') : 'hover:bg-muted'}
+                  `}
+                >
+                  {option}
+                </button>
+              ))}
             </div>
-
             {submitted ? (
-              <p
-                className={`text-sm font-medium ${isCorrectResult ? 'text-green-600' : 'text-destructive'}`}
-              >
+              <p className={`text-sm font-medium ${isCorrectResult ? 'text-green-600' : 'text-destructive'}`}>
                 {isCorrectResult ? '✓ Correct! +10 points' : `✗ Incorrect. The right answer was: ${quiz.options[quiz.correctAnswerIndex]}`}
               </p>
             ) : (
-              <Button
-                onClick={handleSubmitQuiz}
-                disabled={selectedIndex === null || saving || !sectionEnded}
-                className="w-full"
-              >
+              <Button onClick={handleSubmitQuiz} disabled={selectedIndex === null || saving || !sectionEnded} className="w-full">
                 {saving ? 'Saving...' : 'Submit answer'}
               </Button>
             )}
-
-            {saveError && (
-              <p className="text-xs text-destructive">{saveError}</p>
-            )}
+            {saveError && <p className="text-xs text-destructive">{saveError}</p>}
           </CardContent>
         </Card>
       )}
