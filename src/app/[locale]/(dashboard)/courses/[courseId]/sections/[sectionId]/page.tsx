@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { SectionView, TranscriptSegment } from '@/components/course/SectionView'
 import { SectionLayoutClient } from '@/components/course/SectionLayoutClient'
+import { TakeawaysSidebar } from '@/components/course/TakeawaysSidebar'
 import { CheckCircle2, Circle, ChevronLeft, PlayCircle, Clock } from 'lucide-react'
 import type { CourseSectionRow, QuizRow, UserProgressRow, CourseRow } from '@/types/database'
 
@@ -25,7 +26,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       .single(),
     supabase
       .from('course_sections')
-      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index')
+      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index, key_takeaways')
       .eq('id', sectionId)
       .eq('course_id', courseId)
       .single(),
@@ -50,7 +51,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'transcript'> | null
   const section = sectionRes.data as Pick<
     CourseSectionRow,
-    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index'
+    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index' | 'key_takeaways'
   > | null
   const allSections = (allSectionsRes.data ?? []) as Pick<
     CourseSectionRow,
@@ -143,6 +144,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
     <SectionLayoutClient
       header={header}
       sidebar={sidebar}
+      takeawaysSidebar={<TakeawaysSidebar takeaways={(section.key_takeaways as string[]) ?? []} />}
       completedCount={completedSet.size}
       totalCount={allSections.length}
     >

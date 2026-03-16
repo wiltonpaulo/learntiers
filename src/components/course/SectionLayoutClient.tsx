@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 interface SectionLayoutClientProps {
   header: ReactNode
   sidebar: ReactNode
+  takeawaysSidebar?: ReactNode
   children: ReactNode
   completedCount: number
   totalCount: number
@@ -18,6 +19,7 @@ interface SectionLayoutClientProps {
 export function SectionLayoutClient({
   header,
   sidebar,
+  takeawaysSidebar,
   children,
   completedCount,
   totalCount,
@@ -26,14 +28,13 @@ export function SectionLayoutClient({
   const [isCinemaMode, setIsCinemaMode] = useState(false)
 
   // ── Note: 56px (h-14) is the height of the global Dashboard header ──
-  // We want this layout to occupy the full remaining height and manage its own scrolling.
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] bg-background overflow-hidden">
-      {/* Lesson Header (internal to the player) */}
+      {/* Lesson Header */}
       {!isCinemaMode && header}
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Sidebar - Independent Scroll */}
+        {/* Left Sidebar - Independent Scroll */}
         <aside
           className={cn(
             'flex-col border-r bg-card transition-all duration-300 ease-in-out h-full',
@@ -51,8 +52,8 @@ export function SectionLayoutClient({
           </div>
         </aside>
 
-        {/* Main Content Area - Independent Scroll */}
-        <main className="flex-1 flex flex-col min-w-0 h-full">
+        {/* Main Content Area */}
+        <main className="flex-1 flex flex-col min-w-0 h-full relative">
           {/* Controls Bar */}
           <div className="flex items-center gap-2 p-2 border-b bg-card shrink-0">
             <Button
@@ -73,7 +74,7 @@ export function SectionLayoutClient({
             </Button>
           </div>
 
-          {/* Independent Scroll Area for Video and Lesson Content */}
+          {/* Video and Lesson Content */}
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             <div
               className={cn(
@@ -85,6 +86,9 @@ export function SectionLayoutClient({
             </div>
           </div>
         </main>
+
+        {/* Right Sidebar (Key Takeaways) */}
+        {!isCinemaMode && takeawaysSidebar}
       </div>
     </div>
   )
