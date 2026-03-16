@@ -65,7 +65,14 @@ export default async function SectionPage({ params }: SectionPageProps) {
 
   if (!section || !course) notFound()
 
-  const completedSet = new Set(progress.filter((p) => p.is_completed).map((p) => p.section_id))
+  // Filter progress to only include sections that belong to THIS course
+  const sectionIds = new Set(allSections.map((s) => s.id))
+  const completedSet = new Set(
+    progress
+      .filter((p) => p.is_completed && sectionIds.has(p.section_id))
+      .map((p) => p.section_id)
+  )
+  
   const currentIndex = allSections.findIndex((s) => s.id === sectionId)
   const nextSection = allSections[currentIndex + 1] ?? null
 

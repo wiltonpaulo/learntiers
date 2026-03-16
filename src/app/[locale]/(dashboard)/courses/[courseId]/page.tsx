@@ -43,7 +43,14 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   }
 
   const totalDuration = sections.reduce((acc, s) => acc + (s.end_time_seconds - s.start_time_seconds), 0)
-  const completedSet = new Set(userProgress.filter((p) => p.is_completed).map((p) => p.section_id))
+  
+  // Filter progress to only include sections that belong to THIS course
+  const sectionIds = new Set(sections.map((s) => s.id))
+  const completedSet = new Set(
+    userProgress
+      .filter((p) => p.is_completed && sectionIds.has(p.section_id))
+      .map((p) => p.section_id)
+  )
   const completedCount = completedSet.size
 
   const firstIncomplete = sections.find((s) => !completedSet.has(s.id))
