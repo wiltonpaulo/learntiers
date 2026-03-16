@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Paperclip, Sparkles, ArrowUp, MessageCircle, Loader2 } from 'lucide-react'
+import { X, Sparkles, ArrowUp, MessageCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
@@ -168,10 +168,6 @@ export function AIAssistantSidebar({ sectionId, isOpen, onClose }: AIAssistantSi
           onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
           className="relative flex items-center gap-2"
         >
-          <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground shrink-0 rounded-full">
-            <Paperclip className="w-4 h-4" />
-          </Button>
-          
           <div className="relative flex-1">
             <Input 
               value={input}
