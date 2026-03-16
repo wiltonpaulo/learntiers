@@ -165,6 +165,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
               }
             : null
         }
+        initialTakeaways={section.key_takeaways as string[]}
         initiallyCompleted={completedSet.has(section.id)}
         onNextSection={nextSection ? nextSectionAction : undefined}
       />

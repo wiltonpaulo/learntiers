@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { saveProgressAction } from '@/lib/actions/progress'
 import { NotesTab } from './NotesTab'
 import { cn } from '@/lib/utils'
+import { Sparkles, Loader2, Zap, Lightbulb } from 'lucide-react'
+import { generateTakeawaysAction } from '@/lib/actions/ai'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,6 +32,7 @@ interface SectionViewProps {
     options: string[]
     correctAnswerIndex: number
   } | null
+  initialTakeaways: string[]
   initiallyCompleted: boolean
   onNextSection?: () => void
 }
@@ -45,6 +48,7 @@ export function SectionView({
   textSummary,
   transcript,
   quiz,
+  initialTakeaways,
   initiallyCompleted,
   onNextSection,
 }: SectionViewProps) {
@@ -53,10 +57,15 @@ export function SectionView({
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'summary' | 'transcript' | 'notes'>('summary')
+  const [activeTab, setActiveTab] = useState<'summary' | 'takeaways' | 'transcript' | 'notes'>('summary')
   const [currentTime, setCurrentTime] = useState(startTimeSeconds)
   const [activeLineIndex, setActiveLineIndex] = useState(-1)
   const [isTheaterMode, setIsTheaterMode] = useState(false)
+
+  // Takeaways State
+  const [takeaways, setTakeaways] = useState<string[]>(initialTakeaways || [])
+  const [isGeneratingTakeaways, setIsGeneratingTakeaways] = useState(false)
+  const [takeawaysError, setTakeawaysError] = useState<string | null>(null)
 
   const playerRef = useRef<SlicedYouTubePlayerRef>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -133,6 +142,24 @@ export function SectionView({
 
   const isCorrectResult = submitted && selectedIndex === quiz?.correctAnswerIndex
 
+  // ── Takeaways generation ───────────────────────────────────────────────────
+  const handleGenerateTakeaways = async () => {
+    setIsGeneratingTakeaways(true)
+    setTakeawaysError(null)
+    try {
+      const result = await generateTakeawaysAction(sectionId)
+      if (result.error) {
+        setTakeawaysError(result.error)
+      } else if (result.takeaways) {
+        setTakeaways(result.takeaways)
+      }
+    } catch (err) {
+      setTakeawaysError('Failed to generate takeaways.')
+    } finally {
+      setIsGeneratingTakeaways(false)
+    }
+  }
+
   return (
     <div className="flex flex-col w-full min-h-full">
       {/* ★ Video Section - WHITE BACKGROUND */}
@@ -171,6 +198,14 @@ export function SectionView({
           >
             Summary
           </button>
+          <button
+            onClick={() => setActiveTab('takeaways')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'takeaways' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Takeaways
+          </button>
           {filteredTranscript && filteredTranscript.length > 0 && (
             <button
               onClick={() => setActiveTab('transcript')}
@@ -198,6 +233,70 @@ export function SectionView({
               <CardHeader className="py-3 px-4"><CardTitle className="text-sm font-bold uppercase tracking-wider opacity-70">Summary</CardTitle></CardHeader>
               <CardContent className="px-4 pb-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">{textSummary}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'takeaways' && (
+            <Card>
+              <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-amber-500" />
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider opacity-70">Key Takeaways</CardTitle>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleGenerateTakeaways} 
+                  disabled={isGeneratingTakeaways}
+                  className="h-8 text-xs font-bold shadow-sm"
+                >
+                  {isGeneratingTakeaways ? (
+                    <>
+                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-3 w-3 text-primary" />
+                      AI Generate
+                    </>
+                  )}
+                </Button>
+              </CardHeader>
+              <CardContent className="px-6 py-6">
+                {takeawaysError && (
+                  <p className="text-xs text-destructive mb-4 bg-destructive/10 p-2 rounded border border-destructive/20">
+                    {takeawaysError}
+                  </p>
+                )}
+                
+                {takeaways && takeaways.length > 0 ? (
+                  <ul className="space-y-6">
+                    {takeaways.map((point, idx) => (
+                      <li key={idx} className="flex gap-3 group animate-in slide-in-from-right-2 duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+                        <div className="mt-1 shrink-0">
+                          <div className="w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center transition-transform group-hover:scale-110">
+                            <Zap className="h-3 w-3 text-amber-500 fill-amber-500" />
+                          </div>
+                        </div>
+                        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400 font-medium">
+                          {point}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold">No takeaways yet</p>
+                      <p className="text-xs text-muted-foreground">Generate AI-powered summaries from this lesson.</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
