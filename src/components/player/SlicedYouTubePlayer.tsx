@@ -48,7 +48,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     const { isCinemaMode, setIsCinemaMode, isAISidebarOpen, setIsAISidebarOpen } = useSectionLayout()
 
     const [playing, setPlaying] = useState(false)
-    const [volume, setVolume] = useState(0.8) // 0 to 1
+    const [volume, setVolume] = useState(0.8)
     const [playbackRate, setPlaybackRate] = useState(1)
     const [muted, setMuted] = useState(false)
     const [ready, setReady] = useState(false)
@@ -135,7 +135,6 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
 
     return (
       <div className="flex flex-col gap-3 w-full">
-        {/* Wrapper do Vídeo */}
         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-white/5">
           {!sectionEnded ? (
             <ReactPlayer
@@ -185,7 +184,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
               {playing ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
             </Button>
 
-            {/* Volume Control (Vertical Popover) */}
+            {/* Volume Control (COM PONTE INVISÍVEL) */}
             <div className="relative group shrink-0">
               <Button 
                 variant="ghost" 
@@ -196,29 +195,31 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                 {muted || volume === 0 ? <VolumeX className="w-5 h-5 text-destructive" /> : <Volume2 className="w-5 h-5" />}
               </Button>
               
-              {/* Vertical Slider Wrapper */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-3 rounded-lg shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
-                <div className="h-24 w-6 relative flex items-center justify-center">
-                  <input
-                    type="range" min="0" max="1" step="0.01"
-                    value={muted ? 0 : volume}
-                    onChange={(e) => {
-                      setVolume(parseFloat(e.target.value))
-                      if (muted) setMuted(false)
-                    }}
-                    style={{
-                      appearance: 'none',
-                      width: '80px',
-                      height: '4px',
-                      background: `linear-gradient(to right, var(--color-primary) ${(muted ? 0 : volume) * 100}%, #f1f5f9 ${(muted ? 0 : volume) * 100}%)`,
-                      transform: 'rotate(-90deg)',
-                      cursor: 'pointer',
-                      borderRadius: '10px'
-                    }}
-                    className="accent-primary"
-                  />
+              {/* O Container agora tem um pb-4 que faz a ponte até ao botão */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 hidden group-hover:flex flex-col items-center z-50 animate-in fade-in slide-in-from-bottom-1 duration-200">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-3 rounded-lg shadow-xl flex flex-col items-center">
+                  <div className="h-24 w-6 relative flex items-center justify-center">
+                    <input
+                      type="range" min="0" max="1" step="0.01"
+                      value={muted ? 0 : volume}
+                      onChange={(e) => {
+                        setVolume(parseFloat(e.target.value))
+                        if (muted) setMuted(false)
+                      }}
+                      style={{
+                        appearance: 'none',
+                        width: '80px',
+                        height: '4px',
+                        background: `linear-gradient(to right, var(--color-primary) ${(muted ? 0 : volume) * 100}%, #f1f5f9 ${(muted ? 0 : volume) * 100}%)`,
+                        transform: 'rotate(-90deg)',
+                        cursor: 'pointer',
+                        borderRadius: '10px'
+                      }}
+                      className="accent-primary"
+                    />
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-500 mt-1">{Math.round((muted ? 0 : volume) * 100)}%</span>
                 </div>
-                <span className="text-[9px] font-bold text-slate-500 mt-1">{Math.round((muted ? 0 : volume) * 100)}%</span>
               </div>
             </div>
 
