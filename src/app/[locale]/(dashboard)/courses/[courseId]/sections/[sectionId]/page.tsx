@@ -142,9 +142,9 @@ export default async function SectionPage({ params }: SectionPageProps) {
 
   return (
     <SectionLayoutClient
+      sectionId={section.id}
       header={header}
       sidebar={sidebar}
-      takeawaysSidebar={<TakeawaysSidebar takeaways={(section.key_takeaways as string[]) ?? []} />}
       completedCount={completedSet.size}
       totalCount={allSections.length}
     >
