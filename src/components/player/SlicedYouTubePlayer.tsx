@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react'
 import ReactPlayer from 'react-player'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, RotateCcw, ArrowRight } from 'lucide-react'
 
@@ -17,7 +15,7 @@ export interface SlicedYouTubePlayerProps {
   onPause?: () => void
   onTimeUpdate?: (currentTime: number) => void
   isCompleted?: boolean
-  onNextSection?: () => void // Callback para o botão de próximo tópico
+  onNextSection?: () => void 
 }
 
 export interface SlicedYouTubePlayerRef {
@@ -45,14 +43,15 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     const [playing, setPlaying] = useState(false)
     const [ready, setReady] = useState(false)
     const [sectionEnded, setSectionEnded] = useState(isCompleted)
-    const [progress, setProgress] = useState(isCompleted ? 100 : 0)
+    const [elapsedLocal, setElapsedLocal] = useState(0) // Seconds relative to start
+    const [isDragging, setIsDragging] = useState(false)
 
     const sectionDuration = endTimeSeconds - startTimeSeconds
+    const progress = (elapsedLocal / sectionDuration) * 100
 
     useImperativeHandle(ref, () => ({
       seekTo: (seconds: number) => {
         setSectionEnded(false)
-        // Pequeno delay para garantir que o player foi re-renderizado antes do seek
         setTimeout(() => {
           playerRef.current?.seekTo(seconds, 'seconds')
           setPlaying(true)
@@ -62,8 +61,8 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
 
     const handleRestart = useCallback(() => {
       setSectionEnded(false)
-      setProgress(0)
-      setReady(false) // Força o re-trigger do onReady
+      setElapsedLocal(0)
+      setReady(false)
     }, [])
 
     const handleReady = useCallback(() => {
@@ -72,9 +71,9 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
       setPlaying(true)
     }, [startTimeSeconds])
 
-    // ── Polling de posição ────────────────────────────────────────────────────
+    // ── Polling Position ──────────────────────────────────────────────────────
     useEffect(() => {
-      if (!ready || sectionEnded) return
+      if (!ready || sectionEnded || isDragging) return
 
       pollerRef.current = setInterval(() => {
         const player = playerRef.current
@@ -89,10 +88,8 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
         }
 
         const elapsed = currentTime - startTimeSeconds
-        const pct = Math.min((elapsed / sectionDuration) * 100, 100)
-        setProgress(pct)
+        setElapsedLocal(elapsed)
 
-        // ★ Gatilho de Conclusão
         if (currentTime >= endTimeSeconds) {
           setPlaying(false)
           setSectionEnded(true)
@@ -108,7 +105,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
       return () => {
         if (pollerRef.current) clearInterval(pollerRef.current)
       }
-    }, [ready, sectionEnded, startTimeSeconds, endTimeSeconds, sectionDuration, onSectionEnd, onTimeUpdate])
+    }, [ready, sectionEnded, startTimeSeconds, endTimeSeconds, sectionDuration, onSectionEnd, onTimeUpdate, isDragging])
 
     const handleSeek = useCallback(
       (seconds: number) => {
@@ -119,15 +116,27 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
       [startTimeSeconds, endTimeSeconds],
     )
 
+    // ── Interaction Handlers ──────────────────────────────────────────────────
+    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const pct = parseFloat(e.target.value)
+      const newElapsed = (pct / 100) * sectionDuration
+      setElapsedLocal(newElapsed)
+    }
+
+    const handleSliderChangeEnd = (e: React.MouseEvent | React.TouchEvent | React.ChangeEvent<HTMLInputElement>) => {
+      setIsDragging(false)
+      const pct = parseFloat((e.target as HTMLInputElement).value)
+      const absoluteSeconds = startTimeSeconds + (pct / 100) * sectionDuration
+      playerRef.current?.seekTo(absoluteSeconds, 'seconds')
+    }
+
     const youtubeUrl = `https://www.youtube.com/watch?v=${ytVideoId}`
 
     return (
-      <div className="flex flex-col gap-4 w-full">
-        {/* Proporção 16:9 Fixa */}
+      <div className="flex flex-col gap-3 w-full">
         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-900 shadow-2xl border border-white/5">
           
           {!sectionEnded ? (
-            /* PLAYER ATIVO */
             <ReactPlayer
               ref={playerRef}
               url={youtubeUrl}
@@ -146,24 +155,23 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                     end: endTimeSeconds,
                     rel: 0,
                     modestbranding: 1,
-                    iv_load_policy: 3, // Oculta anotações
+                    iv_load_policy: 3,
                   },
                 },
               }}
             />
           ) : (
-            /* INTERFACE DE CONCLUSÃO (Player Desmontado) */
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 animate-in fade-in zoom-in duration-500 text-center px-6">
               <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle className="w-12 h-12 text-emerald-500" />
               </div>
               
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                Seção Concluída!
+                Section Completed!
               </h2>
               
               <p className="text-slate-400 text-sm md:text-base max-w-md mb-8">
-                Você finalizou este tópico. Teste seus conhecimentos no quiz abaixo ou avance para a próxima aula.
+                You have finished this topic. Test your knowledge in the quiz below or move to the next lesson.
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-3">
@@ -173,7 +181,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                   className="bg-transparent border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Refazer Aula
+                  Retake Lesson
                 </Button>
                 
                 {onNextSection && (
@@ -181,7 +189,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                     onClick={onNextSection}
                     className="bg-primary hover:bg-primary/90 text-white font-bold"
                   >
-                    Próximo Tópico
+                    Next Topic
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 )}
@@ -190,12 +198,36 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
           )}
         </div>
 
-        {/* Barra de Progresso customizada */}
         {!sectionEnded && (
           <div className="flex items-center gap-3 px-1">
-            <Progress value={progress} className="flex-1 h-1.5 bg-slate-800" />
-            <span className="text-[10px] font-mono text-slate-500 tabular-nums uppercase tracking-widest">
-              {progress.toFixed(0)}% completo
+            {/* Timer - plain text */}
+            <div className="text-[11px] font-bold font-mono text-muted-foreground tabular-nums shrink-0">
+              {formatTime(elapsedLocal)} / {formatTime(sectionDuration)}
+            </div>
+
+            {/* Interactive Slider */}
+            <div className="relative flex-1 h-1.5 flex items-center group">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="0.1"
+                value={progress}
+                onMouseDown={() => setIsDragging(true)}
+                onTouchStart={() => setIsDragging(true)}
+                onChange={handleSliderChange}
+                onMouseUp={handleSliderChangeEnd}
+                onTouchEnd={handleSliderChangeEnd}
+                className="absolute inset-0 w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-primary focus:outline-none z-10"
+                style={{
+                  background: `linear-gradient(to right, var(--color-primary) ${progress}%, var(--color-muted) ${progress}%)`
+                }}
+              />
+            </div>
+
+            {/* Percentage - plain text */}
+            <span className="text-[11px] font-bold font-mono text-muted-foreground tabular-nums shrink-0">
+              {progress.toFixed(0)}%
             </span>
           </div>
         )}
@@ -205,3 +237,19 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
 )
 
 SlicedYouTubePlayer.displayName = 'SlicedYouTubePlayer'
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatTime(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  
+  const pad = (n: number) => String(n).padStart(2, '0')
+  
+  if (h > 0) {
+    return `${pad(h)}:${pad(m)}:${pad(sec)}`
+  }
+  return `${pad(m)}:${pad(sec)}`
+}
