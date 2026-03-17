@@ -52,6 +52,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <NavLink href={`/${locale}/courses`} icon={<BookOpen className="w-4 h-4" />}>
               Courses
             </NavLink>
+            {user && (
+              <NavLink href={`/${locale}/my-learning`} icon={<GraduationCap className="w-4 h-4" />}>
+                My Learning
+              </NavLink>
+            )}
             <NavLink href={`/${locale}/leaderboard`} icon={<Trophy className="w-4 h-4" />}>
               Leaderboard
             </NavLink>
