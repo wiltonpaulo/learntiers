@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { Separator } from '@/components/ui/separator'
 import { CheckCircle2, Clock, PlayCircle, BookOpen, ChevronLeft, GraduationCap, ShieldCheck, MonitorPlay, Infinity, Smartphone, Trophy } from 'lucide-react'
+import RecentlyViewedTracker from '@/components/course/RecentlyViewedTracker'
 
 import type { CourseRow, CourseSectionRow, UserProgressRow } from '@/types/database'
 
@@ -75,6 +76,14 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
 
   return (
     <div className="min-h-screen bg-background pb-12">
+      <RecentlyViewedTracker 
+        course={{
+          id: courseId,
+          title: course.title,
+          cover_image_url: course.cover_image_url,
+          duration: totalDuration ? formatDuration(totalDuration) : 'Free'
+        }} 
+      />
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div className="bg-slate-900 text-white py-12 px-4">
         <div className="container mx-auto max-w-5xl flex flex-col lg:flex-row gap-8 relative">

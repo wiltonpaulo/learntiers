@@ -3,8 +3,9 @@ import { getLocale } from 'next-intl/server'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/lib/actions/auth'
-import { BookOpen, Trophy, User, LogOut, GraduationCap, LogIn } from 'lucide-react'
+import { BookOpen, Trophy, User, LogOut, GraduationCap, LogIn, Search } from 'lucide-react'
 import type { UserRow } from '@/types/database'
+import SearchOverlay from '@/components/ui/SearchOverlay'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale()
@@ -48,7 +49,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Link>
 
           {/* Nav links */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             <NavLink href={`/${locale}/courses`} icon={<BookOpen className="w-4 h-4" />}>
               Courses
             </NavLink>
@@ -60,10 +61,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <NavLink href={`/${locale}/leaderboard`} icon={<Trophy className="w-4 h-4" />}>
               Leaderboard
             </NavLink>
-            <NavLink href={`/${locale}/profile`} icon={<User className="w-4 h-4" />}>
-              Profile
-            </NavLink>
           </nav>
+
+          {/* Search bar */}
+          <SearchOverlay />
 
           {/* User area */}
           <div className="flex items-center gap-3">
