@@ -24,6 +24,18 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const user = userRes.data.user
   const isAdmin = user?.app_metadata?.role === 'admin'
 
+  // Fetch profile if user is logged in
+  const { data: profileData } = user 
+    ? await supabase.from('users').select('name').eq('id', user.id).maybeSingle()
+    : { data: null }
+
+  const profile = profileData as { name: string } | null
+  const displayName = profile?.name || user?.email?.split('@')[0]
+
+  // Determine greeting based on time of day
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+
   return (
     <div className="min-h-screen bg-background">
       {/* ── Hero Section ────────────────────────────────────────────────── */}
@@ -48,19 +60,39 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
 
           <div className="max-w-3xl space-y-6">
-            <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-              Master New Skills with <span className="text-primary-400">Micro-Lessons</span>
-            </h1>
-            <p className="text-slate-300 text-lg md:text-xl leading-relaxed max-w-2xl">
-              The smartest way to learn. Bite-sized video lessons, interactive quizzes, 
-              and a community of students pushing their limits.
-            </p>
+            {user ? (
+              <div className="space-y-2 mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-primary-400">
+                  {greeting}, {displayName}
+                </h2>
+                <div className="space-y-4">
+                  <p className="text-slate-300 text-lg md:text-xl leading-relaxed">
+                    You are interested in the role of <span className="text-white font-bold">Devops Engineer</span>
+                  </p>
+                  <p className="text-white text-xl md:text-2xl font-extrabold">
+                    Let's get started! What's your goal?
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
+                Master New Skills with <span className="text-primary-400">Micro-Lessons</span>
+              </h1>
+            )}
+            
+            {!user && (
+              <p className="text-slate-300 text-lg md:text-xl leading-relaxed max-w-2xl">
+                The smartest way to learn. Bite-sized video lessons, interactive quizzes, 
+                and a community of students pushing their limits.
+              </p>
+            )}
+
             <div className="flex flex-wrap gap-4 pt-4">
               <Link
-                href={`/${locale}/courses`}
+                href={user ? `/${locale}/my-learning` : `/${locale}/courses`}
                 className="bg-primary text-primary-foreground px-8 py-4 rounded-none font-bold text-lg hover:bg-primary/90 transition-all flex items-center gap-2"
               >
-                Explore All Courses
+                {user ? 'Continue My Learning' : 'Explore All Courses'}
                 <ChevronRight className="w-5 h-5" />
               </Link>
             </div>

@@ -6,15 +6,28 @@ import { BookOpen, Clock, ArrowRight, GraduationCap, ShieldCheck, Search, Filter
 import type { CourseRow } from '@/types/database'
 import { Star } from 'lucide-react'
 
-export default async function CoursesPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function CoursesPage({ 
+  params,
+  searchParams,
+}: { 
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ q?: string }>;
+}) {
   const { locale } = await params
+  const { q } = await searchParams
   const supabase = await createClient()
 
+  let query = supabase
+    .from('courses')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (q) {
+    query = query.ilike('title', `%${q}%`)
+  }
+
   const [coursesRes, userRes] = await Promise.all([
-    supabase
-      .from('courses')
-      .select('*')
-      .order('created_at', { ascending: false }),
+    query,
     supabase.auth.getUser(),
   ])
 
@@ -63,14 +76,16 @@ export default async function CoursesPage({ params }: { params: Promise<{ locale
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto max-w-6xl px-4 py-4 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="relative w-full md:w-80">
+            <form action={`/${locale}/courses`} method="GET" className="relative w-full md:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
+                name="q"
+                defaultValue={q ?? ''}
                 placeholder="Search for anything..."
                 className="w-full bg-background border rounded-none pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
               />
-            </div>
+            </form>
             <button className="flex items-center gap-2 px-4 py-2 border font-bold text-sm hover:bg-muted transition-colors">
               <Filter className="w-4 h-4" />
               Filters
