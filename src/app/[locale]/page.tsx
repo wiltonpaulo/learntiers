@@ -32,10 +32,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const profile = profileData as { name: string } | null
   const displayName = profile?.name || user?.email?.split('@')[0]
 
-  // Determine greeting based on time of day
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
-
   return (
     <div className="min-h-screen bg-background">
       {/* ── Hero Section ────────────────────────────────────────────────── */}
@@ -63,14 +59,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             {user ? (
               <div className="space-y-2 mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-primary-400">
-                  {greeting}, {displayName}
+                  Welcome back, {displayName}
                 </h2>
                 <div className="space-y-4">
-                  <p className="text-slate-300 text-lg md:text-xl leading-relaxed">
-                    You are interested in the role of <span className="text-white font-bold">Devops Engineer</span>
-                  </p>
                   <p className="text-white text-xl md:text-2xl font-extrabold">
-                    Let's get started! What's your goal?
+                    Let's continue your learning journey!
                   </p>
                 </div>
               </div>
