@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { SlicedYouTubePlayer, SlicedYouTubePlayerRef } from '@/components/player/SlicedYouTubePlayer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { NotesTab } from './NotesTab'
 import { cn } from '@/lib/utils'
 import { Sparkles, Loader2, Zap, Lightbulb } from 'lucide-react'
 import { generateTakeawaysAction } from '@/lib/actions/ai'
+import { useSectionLayout } from './SectionLayoutClient'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,6 +63,16 @@ export function SectionView({
   const [currentTime, setCurrentTime] = useState(startTimeSeconds)
   const [activeLineIndex, setActiveLineIndex] = useState(-1)
   const [isTheaterMode, setIsTheaterMode] = useState(false)
+  
+  const { isCinemaMode } = useSectionLayout()
+
+  // Ensure modes are exclusive
+  useEffect(() => {
+    if (isCinemaMode) {
+      if (isTheaterMode) setIsTheaterMode(false)
+      setActiveTab('transcript')
+    }
+  }, [isCinemaMode])
 
   // Takeaways State
   const [takeaways, setTakeaways] = useState<string[]>(initialTakeaways || [])
@@ -92,17 +104,33 @@ export function SectionView({
 
   // ── Trigger scroll only when activeLineIndex changes ────────────────────
   useEffect(() => {
-    if (activeTab === 'transcript' && activeLineIndex !== -1 && scrollContainerRef.current) {
-      const scrollTargetIndex = Math.max(0, activeLineIndex - 1)
-      const element = transcriptRefs.current[scrollTargetIndex]
+    if (activeLineIndex !== -1 && scrollContainerRef.current) {
+      const element = transcriptRefs.current[activeLineIndex]
       const container = scrollContainerRef.current
       
       if (element && container) {
-        const targetScrollTop = element.offsetTop - 16
-        container.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
+        const elementOffset = (element as unknown as HTMLElement).offsetTop
+        const elementHeight = (element as unknown as HTMLElement).offsetHeight
+        const containerHeight = container.offsetHeight
+        
+        let targetScrollTop;
+        
+        if (isCinemaMode) {
+          // In Cinema mode, keep it centered as requested
+          targetScrollTop = elementOffset - (containerHeight / 2) + (elementHeight / 2)
+        } else {
+          // In Normal mode (below video), keep focus on the "second line"
+          // We scroll to the element position minus ~80px to leave space for one line above
+          targetScrollTop = elementOffset - 80
+        }
+        
+        container.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        })
       }
     }
-  }, [activeLineIndex, activeTab])
+  }, [activeLineIndex, isCinemaMode])
 
   const handleSectionEnd = useCallback(async () => {
     setSectionEnded(true)
@@ -142,6 +170,18 @@ export function SectionView({
 
   const isCorrectResult = submitted && selectedIndex === quiz?.correctAnswerIndex
 
+  // ── Portal Target for Cinema Mode Transcript ──────────────────────────────
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
+  
+  useEffect(() => {
+    if (isCinemaMode) {
+      const el = document.getElementById('cinema-transcript-portal')
+      setPortalTarget(el)
+    } else {
+      setPortalTarget(null)
+    }
+  }, [isCinemaMode])
+
   // ── Takeaways generation ───────────────────────────────────────────────────
   const handleGenerateTakeaways = async () => {
     setIsGeneratingTakeaways(true)
@@ -160,34 +200,67 @@ export function SectionView({
     }
   }
 
+  const transcriptContent = filteredTranscript && (
+    <div ref={scrollContainerRef} className={cn("overflow-y-auto p-6 custom-scrollbar relative", isCinemaMode ? "h-full" : "h-[300px]")}>
+      <div className="block text-lg leading-relaxed text-justify px-4 py-4">
+        {filteredTranscript.map((segment, i) => (
+          <span
+            key={i}
+            ref={(el) => { transcriptRefs.current[i] = el as unknown as HTMLDivElement }}
+            onClick={() => handleSeekVideo(segment.start)}
+            className={cn(
+              "cursor-pointer transition-all duration-300 inline mr-1.5 px-1 py-0.5 rounded",
+              i === activeLineIndex 
+                ? "bg-primary text-primary-foreground font-bold shadow-sm scale-105 inline-block z-10" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            )}
+          >
+            {segment.text}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex flex-col w-full min-h-full">
       {/* ★ Video Section - WHITE BACKGROUND */}
       <div className={cn(
-        "w-full transition-all duration-500 ease-in-out bg-white dark:bg-slate-900 border-b",
-        isTheaterMode ? "py-0" : "py-6"
+        "w-full transition-all duration-500 ease-in-out bg-white dark:bg-slate-900",
+        (isTheaterMode || isCinemaMode) ? "py-0" : "py-6",
+        !isCinemaMode && "border-b"
       )}>
         <div className={cn(
-          "mx-auto relative",
-          isTheaterMode ? "max-w-none w-full px-0" : "max-w-4xl px-4 md:px-6"
+          "mx-auto relative transition-all duration-500",
+          isCinemaMode ? "max-w-none w-full px-6 py-6" : isTheaterMode ? "max-w-none w-full px-0" : "max-w-6xl px-4 md:px-6"
         )}>
-          <SlicedYouTubePlayer
-            ref={playerRef}
-            ytVideoId={ytVideoId}
-            startTimeSeconds={startTimeSeconds}
-            endTimeSeconds={endTimeSeconds}
-            onSectionEnd={handleSectionEnd}
-            onTimeUpdate={handleTimeUpdate}
-            isCompleted={initiallyCompleted}
-            onNextSection={onNextSection}
-            isTheaterMode={isTheaterMode}
-            toggleTheater={() => setIsTheaterMode(!isTheaterMode)}
-          />
+          <div className={cn(
+            "mx-auto transition-all duration-500",
+            isCinemaMode ? "max-w-[1280px]" : "max-w-none"
+          )}>
+            <SlicedYouTubePlayer
+              ref={playerRef}
+              ytVideoId={ytVideoId}
+              startTimeSeconds={startTimeSeconds}
+              endTimeSeconds={endTimeSeconds}
+              onSectionEnd={handleSectionEnd}
+              onTimeUpdate={handleTimeUpdate}
+              isCompleted={initiallyCompleted}
+              onNextSection={onNextSection}
+              isTheaterMode={isTheaterMode}
+              toggleTheater={() => {
+                setIsTheaterMode(!isTheaterMode)
+              }}
+            />
+          </div>
         </div>
       </div>
 
       {/* ★ Interactive Content Section */}
-      <div className="w-full max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8">
+      <div className={cn(
+        "w-full max-w-6xl mx-auto px-4 md:px-6 py-8 space-y-8 transition-all duration-300",
+        isCinemaMode ? "opacity-0 h-0 overflow-hidden pointer-events-none p-0" : "opacity-100"
+      )}>
         {/* Tabs Switcher */}
         <div className="flex border-b border-muted">
           <button
@@ -304,25 +377,13 @@ export function SectionView({
           {activeTab === 'transcript' && filteredTranscript && (
             <Card>
               <CardContent className="p-0">
-                <div ref={scrollContainerRef} className="h-[200px] overflow-y-auto p-4 custom-scrollbar relative">
-                  <div className="space-y-2">
-                    {filteredTranscript.map((segment, i) => (
-                      <div
-                        key={i}
-                        ref={(el) => { transcriptRefs.current[i] = el }}
-                        onClick={() => handleSeekVideo(segment.start)}
-                        className={`p-2 rounded-md cursor-pointer transition-all duration-300 hover:bg-muted/50 ${
-                          i === activeLineIndex ? 'bg-primary/10 font-bold text-primary text-base border-l-4 border-primary pl-3' : 'text-muted-foreground/70 text-sm border-l-4 border-transparent'
-                        }`}
-                      >
-                        <span>{segment.text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                {transcriptContent}
               </CardContent>
             </Card>
           )}
+          
+          {/* Cinema Mode Portal */}
+          {isCinemaMode && portalTarget && createPortal(transcriptContent, portalTarget)}
 
           {activeTab === 'notes' && (
             <NotesTab 

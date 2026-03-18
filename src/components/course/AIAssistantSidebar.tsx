@@ -19,6 +19,7 @@ interface AIAssistantSidebarProps {
   sectionId: string
   isOpen: boolean
   onClose: () => void
+  hideHeader?: boolean
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -28,7 +29,7 @@ const SUGGESTED_QUESTIONS = [
   "How does this relate to the previous lesson?"
 ]
 
-export function AIAssistantSidebar({ sectionId, isOpen, onClose }: AIAssistantSidebarProps) {
+export function AIAssistantSidebar({ sectionId, isOpen, onClose, hideHeader = false }: AIAssistantSidebarProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -77,19 +78,24 @@ export function AIAssistantSidebar({ sectionId, isOpen, onClose }: AIAssistantSi
   if (!isOpen) return null
 
   return (
-    <aside className="w-80 md:w-96 border-l bg-card flex flex-col h-full animate-in slide-in-from-right duration-300 shadow-2xl z-40 relative">
+    <aside className={cn(
+      "border-l bg-card flex flex-col h-full animate-in slide-in-from-right duration-300 shadow-2xl z-40 relative",
+      hideHeader ? "w-full border-l-0" : "w-80 md:w-96"
+    )}>
       {/* ── Header ── */}
-      <div className="h-14 px-4 flex items-center justify-between border-b shrink-0 bg-background">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 fill-primary" />
-            AI Assistant
-          </span>
+      {!hideHeader && (
+        <div className="h-14 px-4 flex items-center justify-between border-b shrink-0 bg-background">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 fill-primary" />
+              AI Assistant
+            </span>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-muted-foreground hover:bg-muted">
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-muted-foreground hover:bg-muted">
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
+      )}
 
       {/* ── Chat Content ── */}
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4">

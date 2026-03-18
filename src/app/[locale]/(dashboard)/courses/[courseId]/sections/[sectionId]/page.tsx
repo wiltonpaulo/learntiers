@@ -159,6 +159,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       sidebar={sidebar}
       completedCount={completedSet.size}
       totalCount={allSections.length}
+      transcript={course.transcript as any[]}
     >
       <SectionView
         sectionId={section.id}

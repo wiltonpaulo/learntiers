@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react'
 import ReactPlayer from 'react-player'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, RotateCcw, ArrowRight, Play, Pause, Volume2, VolumeX, Monitor, Square, Gauge, Sparkles, Maximize } from 'lucide-react'
+import { CheckCircle, RotateCcw, ArrowRight, Play, Pause, Volume2, VolumeX, Monitor, Square, Gauge, Sparkles, Maximize, Columns } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSectionLayout } from '@/components/course/SectionLayoutClient'
 
@@ -44,6 +44,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
   }, ref) => {
     const playerRef = useRef<InstanceType<typeof ReactPlayer>>(null)
     const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
     
     const { isCinemaMode, setIsCinemaMode, isAISidebarOpen, setIsAISidebarOpen } = useSectionLayout()
 
@@ -131,11 +132,23 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
       setPlaybackRate(SPEEDS[nextIndex])
     }
 
+    const handleFullscreen = () => {
+      if (!containerRef.current) return
+      if (document.fullscreenElement) {
+        document.exitFullscreen()
+      } else {
+        containerRef.current.requestFullscreen()
+      }
+    }
+
     const youtubeUrl = `https://www.youtube.com/watch?v=${ytVideoId}`
 
     return (
-      <div className="flex flex-col gap-3 w-full">
-        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-white/5">
+      <div ref={containerRef} className="flex flex-col gap-3 w-full bg-white dark:bg-slate-950 group/player">
+        <div className={cn(
+          "relative w-full aspect-video overflow-hidden bg-white dark:bg-slate-900 shadow-2xl transition-all duration-300",
+          (!isTheaterMode && !isCinemaMode) ? "rounded-xl border border-slate-200 dark:border-white/5" : "rounded-none"
+        )}>
           {!sectionEnded ? (
             <ReactPlayer
               ref={playerRef}
@@ -184,7 +197,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
               {playing ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
             </Button>
 
-            {/* Volume Control (COM PONTE INVISÍVEL) */}
+            {/* Volume Control */}
             <div className="relative group shrink-0">
               <Button 
                 variant="ghost" 
@@ -195,7 +208,6 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                 {muted || volume === 0 ? <VolumeX className="w-5 h-5 text-destructive" /> : <Volume2 className="w-5 h-5" />}
               </Button>
               
-              {/* O Container agora tem um pb-4 que faz a ponte até ao botão */}
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 hidden group-hover:flex flex-col items-center z-50 animate-in fade-in slide-in-from-bottom-1 duration-200">
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-3 rounded-lg shadow-xl flex flex-col items-center">
                   <div className="h-24 w-6 relative flex items-center justify-center">
@@ -261,7 +273,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
 
             <div className="flex items-center gap-1 border-l pl-3 ml-1 border-slate-100 dark:border-white/10 shrink-0">
               {/* ✨ Ask AI Button */}
-              {!isAISidebarOpen && (
+              {!isAISidebarOpen && !isCinemaMode && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
@@ -273,24 +285,41 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                 </Button>
               )}
 
-              {/* Theater Mode Button */}
+              {/* Theater Mode Button (Stretches borders) */}
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className={cn("h-9 w-9", isTheaterMode ? "text-primary bg-primary/5" : "text-slate-400")}
-                onClick={toggleTheater}
+                className={cn("h-9 w-9", isTheaterMode && !isCinemaMode ? "text-primary bg-primary/5" : "text-slate-400")}
+                onClick={() => {
+                  if (isCinemaMode) setIsCinemaMode(false)
+                  toggleTheater?.()
+                }}
                 title="Theater mode"
               >
                 {isTheaterMode ? <Square className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
               </Button>
 
-              {/* Cinema Mode Button */}
+              {/* Cinema Mode Button (Transcript on the side) */}
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className={cn("h-9 w-9", isCinemaMode ? "text-primary bg-primary/5" : "text-slate-400")}
-                onClick={() => setIsCinemaMode(!isCinemaMode)}
+                onClick={() => {
+                  if (isTheaterMode) toggleTheater?.()
+                  setIsCinemaMode(!isCinemaMode)
+                }}
                 title="Cinema mode"
+              >
+                <Columns className="w-4 h-4" />
+              </Button>
+
+              {/* REAL Fullscreen Button (Whole screen) */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-9 w-9 text-slate-400"
+                onClick={handleFullscreen}
+                title="Full screen"
               >
                 <Maximize className="w-4 h-4" />
               </Button>
