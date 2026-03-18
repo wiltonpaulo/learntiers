@@ -2,10 +2,11 @@ import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { logoutAction } from '@/lib/actions/auth'
-import { BookOpen, Trophy, User, LogOut, GraduationCap, LogIn, Search } from 'lucide-react'
+import { BookOpen, Trophy, GraduationCap, LogIn } from 'lucide-react'
 import type { UserRow } from '@/types/database'
 import SearchOverlay from '@/components/ui/SearchOverlay'
+import { UserMenu } from '@/components/auth/UserMenu'
+import { ScoreHoverCard } from '@/components/dashboard/ScoreHoverCard'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale()
@@ -13,19 +14,28 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
 
   let profile: Pick<UserRow, 'name' | 'total_score'> | null = null
-  let initials = '?'
+  let progress: any[] = []
 
   if (user) {
-    const { data } = await supabase
-      .from('users')
-      .select('name, total_score')
-      .eq('id', user.id)
-      .single()
-    profile = data as Pick<UserRow, 'name' | 'total_score'> | null
-    initials = profile?.name
-      ? profile.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
-      : user.email?.[0].toUpperCase() ?? '?'
+    const [pRes, progRes] = await Promise.all([
+      supabase
+        .from('users')
+        .select('name, total_score')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('user_progress')
+        .select('is_completed, quiz_score')
+        .eq('user_id', user.id)
+    ])
+    profile = pRes.data as Pick<UserRow, 'name' | 'total_score'> | null
+    progress = progRes.data ?? []
   }
+
+  const completedLessons = progress.filter(p => p.is_completed).length
+  const avgQuizScore = progress.length > 0
+    ? Math.round(progress.reduce((acc, p) => acc + (p.quiz_score ?? 0), 0) / progress.length)
+    : 0
 
   // Detect if we are in a course section page to hide footer and manage height
   const headersList = await headers()
@@ -70,30 +80,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div className="flex items-center gap-3">
             {user ? (
               <>
-                {/* Score chip */}
-                <div className="hidden sm:flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
-                  <Trophy className="w-3.5 h-3.5 text-yellow-400" />
-                  <span className="text-xs font-semibold text-white tabular-nums">
-                    {profile?.total_score?.toLocaleString() ?? 0}
-                  </span>
-                </div>
+                <ScoreHoverCard 
+                  totalScore={profile?.total_score ?? 0}
+                  completedLessons={completedLessons}
+                  avgQuizScore={avgQuizScore}
+                />
 
-                {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
-                  {initials}
-                </div>
-
-                {/* Logout */}
-                <form action={logoutAction}>
-                  <input type="hidden" name="locale" value={locale} />
-                  <button
-                    type="submit"
-                    className="text-white/60 hover:text-white transition-colors"
-                    title="Log out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </form>
+                <UserMenu 
+                  user={{
+                    name: profile?.name || user.email?.split('@')[0],
+                    email: user.email,
+                    image: null // Add image field if available in your UserRow
+                  }} 
+                  locale={locale} 
+                />
               </>
             ) : (
               <div className="flex items-center gap-2">

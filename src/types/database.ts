@@ -17,6 +17,7 @@ export interface UserRow {
   name: string
   total_score: number
   country: string | null
+  phone: string | null
   created_at: string
 }
 
