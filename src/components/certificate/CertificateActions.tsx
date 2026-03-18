@@ -8,13 +8,13 @@ interface CertificateActionsProps {
   courseName: string
   verificationCode: string
   issuedAt: string
+  certUrl: string
 }
 
-export function CertificateActions({ courseName, verificationCode, issuedAt }: CertificateActionsProps) {
+export function CertificateActions({ courseName, verificationCode, issuedAt, certUrl }: CertificateActionsProps) {
   const date = new Date(issuedAt)
   const year = date.getFullYear()
   const month = date.getMonth() + 1 // 1-indexed for LinkedIn
-  const certUrl = typeof window !== 'undefined' ? window.location.href : ''
 
   // LinkedIn Add Certification URL
   const linkedinUrl = `https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${encodeURIComponent(

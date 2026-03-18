@@ -66,6 +66,10 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
     day: 'numeric',
   })
 
+  // Construct absolute URL for sharing/LinkedIn
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://learntiers.com'
+  const fullCertUrl = `${baseUrl}/${locale}/verify/${code}`
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 py-12 px-4 md:py-20 print:bg-white print:text-slate-900 print:p-0">
       {/* Force Landscape and High Quality Colors for PDF Printing */}
@@ -112,7 +116,7 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
               <p className="text-slate-400 italic font-serif text-lg md:text-xl print:text-slate-500">
                 LearnTiers certifies that
               </p>
-              <h3 className="text-4xl md:text-7xl font-black text-white print:text-primary border-b-4 border-primary/30 pb-4 inline-block px-12">
+              <h3 className="text-3xl md:text-6xl font-medium text-white print:text-primary border-b-4 border-primary/30 pb-4 inline-block px-12 tracking-tight">
                 {typedCertificate.users.name || 'Learner'}
               </h3>
             </div>
@@ -143,13 +147,21 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
               </div>
 
               {/* Right side: Signature */}
-              <div className="text-right space-y-1 pb-1">
-                <div className="font-serif italic text-2xl text-white print:text-slate-900 px-4 border-b border-slate-700 print:border-slate-200 inline-block">
-                  Wilton Paulo da Silva
+              <div className="text-right space-y-0 pb-1 flex flex-col items-center">
+                <div className="relative flex flex-col items-center border-b border-slate-700/50 print:border-slate-200 px-8">
+                  <div 
+                    className="text-6xl text-white print:text-slate-900 leading-[0.6] pt-4 -mb-2 select-none pointer-events-none font-normal"
+                    style={{ fontFamily: 'var(--font-signature), cursive' }}
+                  >
+                    WPS
+                  </div>
                 </div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 print:text-slate-400">
-                  Founder
-                </p>
+                <div className="flex flex-col items-center leading-tight mt-2">
+                  <span className="text-sm font-bold text-slate-300 print:text-slate-800">Wilton Paulo da Silva</span>
+                  <p className="text-[8px] font-bold uppercase tracking-[0.3em] text-slate-500 print:text-slate-400 mt-0.5">
+                    Founder
+                  </p>
+                </div>
               </div>
 
             </div>
@@ -173,6 +185,7 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
             courseName={typedCertificate.courses.title || 'Course'} 
             verificationCode={code}
             issuedAt={typedCertificate.issued_at}
+            certUrl={fullCertUrl}
           />
         </div>
 
