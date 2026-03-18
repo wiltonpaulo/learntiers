@@ -7,6 +7,8 @@ import { routing } from '@/i18n/routing'
 import { fetchYouTubeTranscript, fetchYouTubeMetadata } from '@/lib/youtube'
 import { parseSubtitleFile } from '@/lib/subtitle-parser'
 import type { CourseRow, CourseSectionRow } from '@/types/database'
+import { s3Client, S3_BUCKET } from '@/lib/s3'
+import { PutObjectCommand } from '@aws-sdk/client-s3'
 
 // ─── Guard helper ─────────────────────────────────────────────────────────────
 
@@ -24,6 +26,24 @@ async function assertAdmin() {
   }
 }
 
+async function uploadTranscriptToS3(courseId: string, transcript: any) {
+  const key = `transcripts/${courseId}.json`
+  const body = JSON.stringify(transcript)
+  
+  await s3Client.send(new PutObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: key,
+    Body: body,
+    ContentType: 'application/json'
+  }))
+
+  // Construct the public URL (assuming the bucket/folder is public)
+  // For Supabase S3, the format is usually: {S3_ENDPOINT}/{S3_BUCKET}/{Key}
+  // But for better portability, we can store just the key or the full URL
+  const endpoint = process.env.S3_ENDPOINT?.replace(/\/s3$/, '')
+  return `${endpoint}/${S3_BUCKET}/${key}`
+}
+
 // ─── Courses ──────────────────────────────────────────────────────────────────
 
 export async function createCourseAction(formData: FormData) {
@@ -38,11 +58,13 @@ export async function createCourseAction(formData: FormData) {
     transcript: null as any,
   }
 
+  let tempTranscript = null
+
   // Handle Transcript File
   const transcriptFile = formData.get('transcript_file') as File | null
   if (transcriptFile && transcriptFile.size > 0) {
     const text = await transcriptFile.text()
-    courseData.transcript = parseSubtitleFile(text)
+    tempTranscript = parseSubtitleFile(text)
   }
 
   let sectionsToImport: any[] = []
@@ -86,7 +108,7 @@ export async function createCourseAction(formData: FormData) {
     title: courseData.title,
     description: courseData.description,
     cover_image_url: courseData.cover_image_url,
-    transcript: courseData.transcript,
+    transcript: null, // Insert null initially
     youtube_channel_name: youtubeChannelName,
     youtube_channel_url: youtubeChannelUrl,
   } as never).select('id').single()
@@ -96,6 +118,17 @@ export async function createCourseAction(formData: FormData) {
   }
 
   const courseId = (course as { id: string }).id
+
+  // If we had a transcript, upload it to S3 now that we have the courseId
+  if (tempTranscript) {
+    try {
+      const transcriptUrl = await uploadTranscriptToS3(courseId, tempTranscript)
+      await db.from('courses').update({ transcript: transcriptUrl } as never).eq('id', courseId)
+    } catch (s3Error) {
+      console.error('S3 Upload Error:', s3Error)
+      // Optional: Handle error (maybe notify user that transcript upload failed)
+    }
+  }
 
   // Import sections if any
   if (sectionsToImport.length > 0) {
@@ -143,29 +176,49 @@ export async function updateCourseAction(formData: FormData) {
   const transcriptFile = formData.get('transcript_file') as File | null
   if (transcriptFile && transcriptFile.size > 0) {
     const text = await transcriptFile.text()
-    updatePayload.transcript = parseSubtitleFile(text)
+    const transcriptData = parseSubtitleFile(text)
+    try {
+      const transcriptUrl = await uploadTranscriptToS3(courseId, transcriptData)
+      updatePayload.transcript = transcriptUrl
+    } catch (s3Error) {
+      console.error('S3 Upload Error:', s3Error)
+    }
   }
 
-  // Auto-fetch channel info if not present
+  // Auto-fetch channel info and check for legacy transcript migration
   const { data: currentCourse } = await db
     .from('courses')
-    .select('youtube_channel_name, id')
+    .select('youtube_channel_name, id, transcript')
     .eq('id', courseId)
-    .single() as { data: Pick<CourseRow, 'youtube_channel_name' | 'id'> | null }
+    .single() as { data: Pick<CourseRow, 'youtube_channel_name' | 'id' | 'transcript'> | null }
 
-  if (currentCourse && !currentCourse.youtube_channel_name) {
-    const { data: firstSection } = await db
-      .from('course_sections')
-      .select('yt_video_id')
-      .eq('course_id', courseId)
-      .order('order_index')
-      .limit(1)
-      .single() as { data: Pick<CourseSectionRow, 'yt_video_id'> | null }
-    if (firstSection?.yt_video_id) {
-      const meta = await fetchYouTubeMetadata(firstSection.yt_video_id)
-      if (meta) {
-        updatePayload.youtube_channel_name = meta.authorName
-        updatePayload.youtube_channel_url = meta.authorUrl
+  if (currentCourse) {
+    // 1. Automatic Migration: If transcript is still a JSON array, move it to S3
+    if (currentCourse.transcript && Array.isArray(currentCourse.transcript) && !updatePayload.transcript) {
+      try {
+        const transcriptUrl = await uploadTranscriptToS3(courseId, currentCourse.transcript)
+        updatePayload.transcript = transcriptUrl
+      } catch (s3Error) {
+        console.error('Migration S3 Error:', s3Error)
+      }
+    }
+
+    // 2. Channel Info Fetch
+    if (!currentCourse.youtube_channel_name) {
+      const { data: firstSection } = await db
+        .from('course_sections')
+        .select('yt_video_id')
+        .eq('course_id', courseId)
+        .order('order_index')
+        .limit(1)
+        .single() as { data: Pick<CourseSectionRow, 'yt_video_id'> | null }
+      
+      if (firstSection?.yt_video_id) {
+        const meta = await fetchYouTubeMetadata(firstSection.yt_video_id)
+        if (meta) {
+          updatePayload.youtube_channel_name = meta.authorName
+          updatePayload.youtube_channel_url = meta.authorUrl
+        }
       }
     }
   }
