@@ -7,6 +7,7 @@ import { SectionLayoutClient } from '@/components/course/SectionLayoutClient'
 import { TakeawaysSidebar } from '@/components/course/TakeawaysSidebar'
 import { CheckCircle2, Circle, ChevronLeft, PlayCircle, Clock } from 'lucide-react'
 import type { CourseSectionRow, QuizRow, UserProgressRow, CourseRow } from '@/types/database'
+import { resolveTranscript } from '@/lib/transcript'
 
 interface SectionPageProps {
   params: Promise<{ courseId: string; sectionId: string }>
@@ -70,6 +71,9 @@ export default async function SectionPage({ params }: SectionPageProps) {
 
   if (!section || !course) notFound()
 
+  // Resolve transcript (could be URL or pre-parsed JSON)
+  const transcript = await resolveTranscript(course.transcript)
+
   // Filter progress to only include sections that belong to THIS course
   const sectionIds = new Set(allSections.map((s) => s.id))
   const completedSet = new Set(
@@ -77,7 +81,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       .filter((p) => p.is_completed && sectionIds.has(p.section_id))
       .map((p) => p.section_id)
   )
-  
+
   const currentIndex = allSections.findIndex((s) => s.id === sectionId)
   const nextSection = allSections[currentIndex + 1] ?? null
 
@@ -159,7 +163,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       sidebar={sidebar}
       completedCount={completedSet.size}
       totalCount={allSections.length}
-      transcript={course.transcript as any[]}
+      transcript={transcript as any[]}
       courseTitle={course.title}
       sectionTitle={section.title}
       ytVideoId={section.yt_video_id}
@@ -172,7 +176,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
         startTimeSeconds={section.start_time_seconds}
         endTimeSeconds={section.end_time_seconds}
         textSummary={section.text_summary}
-        transcript={course.transcript as unknown as TranscriptSegment[]}
+        transcript={transcript}
         quiz={
           quiz
             ? {
