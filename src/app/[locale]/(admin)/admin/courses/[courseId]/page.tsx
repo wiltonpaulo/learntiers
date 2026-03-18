@@ -76,7 +76,7 @@ export default async function CourseEditPage({ params, searchParams }: CourseEdi
         <h2 className="text-sm font-semibold">Course details</h2>
         <Separator />
 
-        <form action={updateCourseAction} className="space-y-5" encType="multipart/form-data">
+        <form action={updateCourseAction} className="space-y-5">
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="courseId" value={courseId} />
 

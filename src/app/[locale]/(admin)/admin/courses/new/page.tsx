@@ -32,7 +32,7 @@ export default async function NewCoursePage({ searchParams }: NewCoursePageProps
         </div>
       )}
 
-      <form action={createCourseAction} className="space-y-6" encType="multipart/form-data">
+      <form action={createCourseAction} className="space-y-6">
         <input type="hidden" name="locale" value={locale} />
 
         <div className="rounded-xl border bg-background p-6 space-y-5">
