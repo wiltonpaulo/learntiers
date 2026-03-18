@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react'
 import ReactPlayer from 'react-player'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, RotateCcw, ArrowRight, Play, Pause, Volume2, VolumeX, Monitor, Square, Gauge, Sparkles, Maximize, Columns } from 'lucide-react'
+import { CheckCircle, RotateCcw, ArrowRight, Play, Pause, Volume2, VolumeX, Monitor, Square, Gauge, Sparkles, Maximize, Columns, Captions } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSectionLayout } from '@/components/course/SectionLayoutClient'
 
@@ -45,6 +45,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     const playerRef = useRef<InstanceType<typeof ReactPlayer>>(null)
     const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
+    const lastElapsedRef = useRef<number>(0) // Ref para manter o tempo exato entre remontagens
     
     const { isCinemaMode, setIsCinemaMode, isAISidebarOpen, setIsAISidebarOpen } = useSectionLayout()
 
@@ -53,14 +54,32 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     const [volume, setVolume] = useState(0.8)
     const [playbackRate, setPlaybackRate] = useState(1)
     const [muted, setMuted] = useState(false)
+    const [captionsEnabled, setCaptionsEnabled] = useState(false)
     const [ready, setReady] = useState(false)
     const [sectionEnded, setSectionEnded] = useState(isCompleted)
     const [elapsedLocal, setElapsedLocal] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
 
+    // Load persisted player settings
     useEffect(() => {
+      const savedVolume = localStorage.getItem('learntiers-player-volume')
+      const savedMuted = localStorage.getItem('learntiers-player-muted')
+      const savedCaptions = localStorage.getItem('learntiers-player-captions')
+      
+      if (savedVolume !== null) setVolume(parseFloat(savedVolume))
+      if (savedMuted !== null) setMuted(savedMuted === 'true')
+      if (savedCaptions !== null) setCaptionsEnabled(savedCaptions === 'true')
+      
       setHasMounted(true)
     }, [])
+
+    // Persist player settings on change
+    useEffect(() => {
+      if (!hasMounted) return
+      localStorage.setItem('learntiers-player-volume', volume.toString())
+      localStorage.setItem('learntiers-player-muted', muted.toString())
+      localStorage.setItem('learntiers-player-captions', captionsEnabled.toString())
+    }, [volume, muted, captionsEnabled, hasMounted])
 
     const sectionDuration = endTimeSeconds - startTimeSeconds
     const progress = (elapsedLocal / sectionDuration) * 100
@@ -68,6 +87,9 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     useImperativeHandle(ref, () => ({
       seekTo: (seconds: number) => {
         setSectionEnded(false)
+        const elapsed = seconds - startTimeSeconds
+        lastElapsedRef.current = elapsed
+        setElapsedLocal(elapsed)
         setTimeout(() => {
           playerRef.current?.seekTo(seconds, 'seconds')
           setPlaying(true)
@@ -77,15 +99,29 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
 
     const handleRestart = useCallback(() => {
       setSectionEnded(false)
+      lastElapsedRef.current = 0
       setElapsedLocal(0)
       setReady(false)
     }, [])
 
     const handleReady = useCallback(() => {
-      playerRef.current?.seekTo(startTimeSeconds, 'seconds')
-      setReady(true)
-      setPlaying(true)
+      const seekTarget = startTimeSeconds + lastElapsedRef.current
+      playerRef.current?.seekTo(seekTarget, 'seconds')
+      setTimeout(() => {
+        setReady(true)
+        setPlaying(true)
+      }, 150)
     }, [startTimeSeconds])
+
+    const toggleCaptions = () => {
+      // Captura o tempo exato no momento do clique
+      const currentTime = playerRef.current?.getCurrentTime()
+      if (currentTime !== undefined) {
+        lastElapsedRef.current = currentTime - startTimeSeconds
+      }
+      setReady(false) 
+      setCaptionsEnabled(prev => !prev)
+    }
 
     useEffect(() => {
       if (!ready || sectionEnded || isDragging) return
@@ -103,6 +139,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
         }
 
         const elapsed = currentTime - startTimeSeconds
+        lastElapsedRef.current = elapsed // Atualiza a ref continuamente
         setElapsedLocal(elapsed)
 
         if (currentTime >= endTimeSeconds) {
@@ -116,11 +153,12 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
       return () => {
         if (pollerRef.current) clearInterval(pollerRef.current)
       }
-    }, [ready, sectionEnded, startTimeSeconds, endTimeSeconds, sectionDuration, onSectionEnd, onTimeUpdate, isDragging])
+    }, [ready, sectionEnded, startTimeSeconds, endTimeSeconds, onSectionEnd, onTimeUpdate, isDragging])
 
     const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const pct = parseFloat(e.target.value)
       const newElapsed = (pct / 100) * sectionDuration
+      lastElapsedRef.current = newElapsed
       setElapsedLocal(newElapsed)
     }
 
@@ -157,6 +195,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
           {!sectionEnded ? (
             hasMounted ? (
               <ReactPlayer
+                key={`yt-player-cc-${captionsEnabled}`} 
                 ref={playerRef}
                 url={youtubeUrl}
                 playing={playing}
@@ -167,7 +206,20 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                 width="100%"
                 height="100%"
                 onReady={handleReady}
-                config={{ youtube: { playerVars: { start: startTimeSeconds, end: endTimeSeconds, rel: 0, modestbranding: 1 } } }}
+                config={{ 
+                  youtube: { 
+                    playerVars: { 
+                      start: startTimeSeconds, 
+                      end: endTimeSeconds, 
+                      rel: 0, 
+                      modestbranding: 1, 
+                      cc_load_policy: captionsEnabled ? 1 : 3, 
+                      iv_load_policy: 3,
+                      hl: 'en',
+                      cc_lang_pref: 'en'
+                    } 
+                  } 
+                }}
               />
             ) : (
               <div className="w-full h-full bg-slate-900 animate-pulse" />
@@ -293,6 +345,17 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                   <Sparkles className="w-4 h-4 fill-primary" />
                 </Button>
               )}
+
+              {/* CC Toggle Button */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={cn("h-9 w-9", captionsEnabled ? "text-primary bg-primary/5" : "text-slate-400")}
+                onClick={toggleCaptions}
+                title="Toggle Captions"
+              >
+                <Captions className="w-4 h-4" />
+              </Button>
 
               {/* Theater Mode Button (Stretches borders) */}
               <Button 
