@@ -88,7 +88,7 @@ export function AIAssistantSidebar({ sectionId, isOpen, onClose, hideHeader = fa
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 fill-primary" />
-              AI Assistant
+              AI Tutor
             </span>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-muted-foreground hover:bg-muted">

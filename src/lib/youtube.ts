@@ -60,3 +60,21 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'");
 }
+
+export async function fetchYouTubeMetadata(videoId: string) {
+  try {
+    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    return {
+      title: data.title,
+      authorName: data.author_name,
+      authorUrl: data.author_url,
+      thumbnailUrl: data.thumbnail_url,
+    };
+  } catch (error) {
+    console.error('Error fetching YouTube metadata:', error);
+    return null;
+  }
+}

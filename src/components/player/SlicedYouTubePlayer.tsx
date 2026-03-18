@@ -48,6 +48,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     
     const { isCinemaMode, setIsCinemaMode, isAISidebarOpen, setIsAISidebarOpen } = useSectionLayout()
 
+    const [hasMounted, setHasMounted] = useState(false)
     const [playing, setPlaying] = useState(false)
     const [volume, setVolume] = useState(0.8)
     const [playbackRate, setPlaybackRate] = useState(1)
@@ -56,6 +57,10 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     const [sectionEnded, setSectionEnded] = useState(isCompleted)
     const [elapsedLocal, setElapsedLocal] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
+
+    useEffect(() => {
+      setHasMounted(true)
+    }, [])
 
     const sectionDuration = endTimeSeconds - startTimeSeconds
     const progress = (elapsedLocal / sectionDuration) * 100
@@ -150,19 +155,23 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
           (!isTheaterMode && !isCinemaMode) ? "rounded-xl border border-slate-200 dark:border-white/5" : "rounded-none"
         )}>
           {!sectionEnded ? (
-            <ReactPlayer
-              ref={playerRef}
-              url={youtubeUrl}
-              playing={playing}
-              volume={volume}
-              muted={muted}
-              playbackRate={playbackRate}
-              controls={false}
-              width="100%"
-              height="100%"
-              onReady={handleReady}
-              config={{ youtube: { playerVars: { start: startTimeSeconds, end: endTimeSeconds, rel: 0, modestbranding: 1 } } }}
-            />
+            hasMounted ? (
+              <ReactPlayer
+                ref={playerRef}
+                url={youtubeUrl}
+                playing={playing}
+                volume={volume}
+                muted={muted}
+                playbackRate={playbackRate}
+                controls={false}
+                width="100%"
+                height="100%"
+                onReady={handleReady}
+                config={{ youtube: { playerVars: { start: startTimeSeconds, end: endTimeSeconds, rel: 0, modestbranding: 1 } } }}
+              />
+            ) : (
+              <div className="w-full h-full bg-slate-900 animate-pulse" />
+            )
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-slate-900 text-center px-6 animate-in fade-in duration-500">
               <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
@@ -279,7 +288,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                   size="icon" 
                   onClick={() => setIsAISidebarOpen(true)}
                   className="h-9 w-9 text-primary hover:bg-primary/5"
-                  title="Ask AI"
+                  title="AI Tutor"
                 >
                   <Sparkles className="w-4 h-4 fill-primary" />
                 </Button>

@@ -26,7 +26,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const [courseRes, sectionRes, allSectionsRes, quizRes, progressRes] = await Promise.all([
     supabase
       .from('courses')
-      .select('id, title, transcript')
+      .select('id, title, transcript, youtube_channel_name, youtube_channel_url')
       .eq('id', courseId)
       .single(),
     supabase
@@ -53,7 +53,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       : Promise.resolve({ data: [] }),
   ])
 
-  const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'transcript'> | null
+  const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'transcript' | 'youtube_channel_name' | 'youtube_channel_url'> | null
   const section = sectionRes.data as Pick<
     CourseSectionRow,
     'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index' | 'key_takeaways'
@@ -160,6 +160,11 @@ export default async function SectionPage({ params }: SectionPageProps) {
       completedCount={completedSet.size}
       totalCount={allSections.length}
       transcript={course.transcript as any[]}
+      courseTitle={course.title}
+      sectionTitle={section.title}
+      ytVideoId={section.yt_video_id}
+      youtubeChannelName={course.youtube_channel_name}
+      youtubeChannelUrl={course.youtube_channel_url}
     >
       <SectionView
         sectionId={section.id}

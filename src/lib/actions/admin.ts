@@ -4,8 +4,9 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { routing } from '@/i18n/routing'
-import { fetchYouTubeTranscript } from '@/lib/youtube'
+import { fetchYouTubeTranscript, fetchYouTubeMetadata } from '@/lib/youtube'
 import { parseSubtitleFile } from '@/lib/subtitle-parser'
+import type { CourseRow, CourseSectionRow } from '@/types/database'
 
 // ─── Guard helper ─────────────────────────────────────────────────────────────
 
@@ -70,11 +71,24 @@ export async function createCourseAction(formData: FormData) {
     return redirect(`/${locale}/admin/courses/new?error=${encodeURIComponent('Course title is required.')}`)
   }
 
+  // Auto-fetch channel info from the first section if available
+  let youtubeChannelName = null
+  let youtubeChannelUrl = null
+  if (sectionsToImport.length > 0 && sectionsToImport[0].yt_video_id) {
+    const meta = await fetchYouTubeMetadata(sectionsToImport[0].yt_video_id)
+    if (meta) {
+      youtubeChannelName = meta.authorName
+      youtubeChannelUrl = meta.authorUrl
+    }
+  }
+
   const { data: course, error: courseError } = await db.from('courses').insert({
     title: courseData.title,
     description: courseData.description,
     cover_image_url: courseData.cover_image_url,
     transcript: courseData.transcript,
+    youtube_channel_name: youtubeChannelName,
+    youtube_channel_url: youtubeChannelUrl,
   } as never).select('id').single()
 
   if (courseError) {
@@ -132,6 +146,30 @@ export async function updateCourseAction(formData: FormData) {
     updatePayload.transcript = parseSubtitleFile(text)
   }
 
+  // Auto-fetch channel info if not present
+  const { data: currentCourse } = await db
+    .from('courses')
+    .select('youtube_channel_name, id')
+    .eq('id', courseId)
+    .single() as { data: Pick<CourseRow, 'youtube_channel_name' | 'id'> | null }
+
+  if (currentCourse && !currentCourse.youtube_channel_name) {
+    const { data: firstSection } = await db
+      .from('course_sections')
+      .select('yt_video_id')
+      .eq('course_id', courseId)
+      .order('order_index')
+      .limit(1)
+      .single() as { data: Pick<CourseSectionRow, 'yt_video_id'> | null }
+    if (firstSection?.yt_video_id) {
+      const meta = await fetchYouTubeMetadata(firstSection.yt_video_id)
+      if (meta) {
+        updatePayload.youtube_channel_name = meta.authorName
+        updatePayload.youtube_channel_url = meta.authorUrl
+      }
+    }
+  }
+
   const { error } = await db.from('courses').update(updatePayload as never).eq('id', courseId)
 
   if (error) redirect(`/${locale}/admin/courses/${courseId}?error=${encodeURIComponent(error.message)}`)
@@ -164,15 +202,28 @@ export async function createSectionAction(formData: FormData) {
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId)
 
+  const yt_video_id = formData.get('yt_video_id') as string
+
   const { error } = await db.from('course_sections').insert({
     course_id: courseId,
     title: formData.get('title') as string,
-    yt_video_id: formData.get('yt_video_id') as string,
+    yt_video_id: yt_video_id,
     start_time_seconds: parseInt(formData.get('start_time_seconds') as string, 10),
     end_time_seconds: parseInt(formData.get('end_time_seconds') as string, 10),
     text_summary: (formData.get('text_summary') as string) || null,
     order_index: count ?? 0,
   } as never)
+
+  // Also update course channel info if it's the first section
+  if (count === 0) {
+    const meta = await fetchYouTubeMetadata(yt_video_id)
+    if (meta) {
+      await db.from('courses').update({
+        youtube_channel_name: meta.authorName,
+        youtube_channel_url: meta.authorUrl
+      } as never).eq('id', courseId)
+    }
+  }
 
   if (error) redirect(`/${locale}/admin/courses/${courseId}/sections/new?error=${encodeURIComponent(error.message)}`)
 

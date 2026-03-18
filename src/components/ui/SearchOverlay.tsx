@@ -82,8 +82,10 @@ export default function SearchOverlay() {
             onFocus={() => setIsOpen(true)}
             placeholder="Search for courses..."
             autoComplete="off"
-            className={`w-full bg-white/10 border border-white/10 rounded-full pl-10 pr-10 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-300 ${
-              isOpen ? 'bg-white text-slate-900 placeholder:text-slate-400 shadow-2xl' : ''
+            className={`w-full border border-white/10 rounded-full pl-10 pr-10 py-2 text-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary ${
+              isOpen 
+                ? 'bg-white text-slate-900 placeholder:text-slate-400 shadow-2xl' 
+                : 'bg-white/10 text-white placeholder:text-white/40'
             }`}
           />
           {isOpen && query && (

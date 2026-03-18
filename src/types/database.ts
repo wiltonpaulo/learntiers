@@ -26,6 +26,8 @@ export interface CourseRow {
   description: string | null
   cover_image_url: string | null
   transcript: Json | null
+  youtube_channel_name: string | null
+  youtube_channel_url: string | null
   created_at: string
 }
 

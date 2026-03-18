@@ -109,6 +109,7 @@ export function SectionView({
       const container = scrollContainerRef.current
       
       if (element && container) {
+        // Calculate the center position relative to the container ONLY
         const elementOffset = (element as unknown as HTMLElement).offsetTop
         const elementHeight = (element as unknown as HTMLElement).offsetHeight
         const containerHeight = container.offsetHeight
@@ -119,9 +120,9 @@ export function SectionView({
           // In Cinema mode, keep it centered as requested
           targetScrollTop = elementOffset - (containerHeight / 2) + (elementHeight / 2)
         } else {
-          // In Normal mode (below video), keep focus on the "second line"
-          // We scroll to the element position minus ~80px to leave space for one line above
-          targetScrollTop = elementOffset - 80
+          // In Normal mode (below video), force focus on the "second line"
+          // 50px ensures it stays near the top but with one line visible above
+          targetScrollTop = elementOffset - 50
         }
         
         container.scrollTo({
@@ -232,7 +233,7 @@ export function SectionView({
       )}>
         <div className={cn(
           "mx-auto relative transition-all duration-500",
-          isCinemaMode ? "max-w-none w-full px-6 py-6" : isTheaterMode ? "max-w-none w-full px-0" : "max-w-6xl px-4 md:px-6"
+          isCinemaMode ? "max-w-none w-full px-6 py-6" : isTheaterMode ? "max-w-none w-full px-0" : "max-w-5xl px-4 md:px-6"
         )}>
           <div className={cn(
             "mx-auto transition-all duration-500",
@@ -258,7 +259,7 @@ export function SectionView({
 
       {/* ★ Interactive Content Section */}
       <div className={cn(
-        "w-full max-w-6xl mx-auto px-4 md:px-6 py-8 space-y-8 transition-all duration-300",
+        "w-full max-w-5xl mx-auto px-4 md:px-6 py-8 space-y-8 transition-all duration-300",
         isCinemaMode ? "opacity-0 h-0 overflow-hidden pointer-events-none p-0" : "opacity-100"
       )}>
         {/* Tabs Switcher */}
