@@ -101,3 +101,31 @@ export async function saveProgressAction({
 
   return {}
 }
+
+export async function saveLastPlaybackAction({
+  courseId,
+  sectionId,
+  time,
+}: {
+  courseId: string
+  sectionId: string
+  time: number
+}): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+
+  const { error } = await (supabase as any).from('user_course_settings').upsert(
+    {
+      user_id: user.id,
+      course_id: courseId,
+      last_section_id: sectionId,
+      last_time_seconds: Math.floor(time),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id,course_id' }
+  )
+
+  if (error) return { error: error.message }
+  return {}
+}
