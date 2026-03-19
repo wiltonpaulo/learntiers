@@ -15,8 +15,12 @@ export async function resolveTranscript(transcriptData: any): Promise<Transcript
   // If it's a string (URL), fetch it
   if (typeof transcriptData === 'string' && transcriptData.startsWith('http')) {
     try {
-      const response = await fetch(transcriptData, { next: { revalidate: 3600 } });
-      if (!response.ok) throw new Error("Failed to fetch transcript from URL");
+      console.log(`[Transcript] Fetching from: ${transcriptData}`);
+      // Use cache: 'no-store' to bypass any stale Vercel/Next.js cache
+      const response = await fetch(transcriptData, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch transcript: ${response.status} ${response.statusText}`);
+      }
       const json = await response.json();
       return json as TranscriptSegment[];
     } catch (error) {
