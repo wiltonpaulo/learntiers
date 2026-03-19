@@ -13,6 +13,8 @@ import { Sparkles, Loader2, Zap, Lightbulb } from 'lucide-react'
 import { generateTakeawaysAction } from '@/lib/actions/ai'
 import { useSectionLayout } from './SectionLayoutClient'
 
+import { PlaygroundTab } from './PlaygroundTab'
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface TranscriptSegment {
@@ -28,6 +30,7 @@ interface SectionViewProps {
   endTimeSeconds: number
   textSummary: string | null
   transcript: TranscriptSegment[] | null
+  playgroundCode?: string | null
   quiz: {
     id: string
     questionText: string
@@ -49,6 +52,7 @@ export function SectionView({
   endTimeSeconds,
   textSummary,
   transcript,
+  playgroundCode,
   quiz,
   initialTakeaways,
   initiallyCompleted,
@@ -59,7 +63,7 @@ export function SectionView({
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'summary' | 'takeaways' | 'transcript' | 'notes'>('summary')
+  const [activeTab, setActiveTab] = useState<'summary' | 'takeaways' | 'transcript' | 'playground' | 'notes'>('summary')
   const [currentTime, setCurrentTime] = useState(startTimeSeconds)
   const [activeLineIndex, setActiveLineIndex] = useState(-1)
   const [isTheaterMode, setIsTheaterMode] = useState(false)
@@ -280,6 +284,14 @@ export function SectionView({
           >
             Takeaways
           </button>
+          <button
+            onClick={() => setActiveTab('playground')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'playground' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Playground
+          </button>
           {filteredTranscript && filteredTranscript.length > 0 && (
             <button
               onClick={() => setActiveTab('transcript')}
@@ -381,6 +393,10 @@ export function SectionView({
                 {transcriptContent}
               </CardContent>
             </Card>
+          )}
+
+          {activeTab === 'playground' && (
+            <PlaygroundTab sectionId={sectionId} initialCode={playgroundCode} />
           )}
           
           {/* Cinema Mode Portal */}

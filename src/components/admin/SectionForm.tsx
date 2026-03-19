@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { Youtube, Clock, HelpCircle, X, FileText } from 'lucide-react'
+import { Youtube, Clock, HelpCircle, X, FileText, Code2 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,6 +15,7 @@ export interface SectionFormValues {
   start_time_seconds: number
   end_time_seconds: number
   text_summary: string
+  playground_code: string
   order_index: number
 }
 
@@ -60,7 +61,7 @@ export function SectionForm({
     : null
 
   return (
-    <form action={action} className="space-y-8" encType="multipart/form-data">
+    <form action={action} className="space-y-8">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="courseId" value={courseId} />
       {sectionId && <input type="hidden" name="sectionId" value={sectionId} />}
@@ -161,6 +162,25 @@ export function SectionForm({
             placeholder="Key takeaways from this lesson..."
             rows={3}
           />
+        </div>
+
+        {/* Playground Code */}
+        <div className="space-y-1.5">
+          <Label htmlFor="playground_code" className="flex items-center gap-2">
+            <Code2 className="w-4 h-4" />
+            Playground Code <span className="text-muted-foreground text-xs font-normal">(optional, React code)</span>
+          </Label>
+          <Textarea
+            id="playground_code"
+            name="playground_code"
+            defaultValue={defaults?.playground_code}
+            placeholder="export default function App() { ... }"
+            className="font-mono text-xs"
+            rows={10}
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Initial code for the interactive React playground tab.
+          </p>
         </div>
 
         {sectionId && (

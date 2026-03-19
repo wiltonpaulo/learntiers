@@ -32,7 +32,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       .single(),
     supabase
       .from('course_sections')
-      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index, key_takeaways')
+      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index, key_takeaways, playground_code')
       .eq('id', sectionId)
       .eq('course_id', courseId)
       .single(),
@@ -57,7 +57,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'transcript' | 'youtube_channel_name' | 'youtube_channel_url'> | null
   const section = sectionRes.data as Pick<
     CourseSectionRow,
-    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index' | 'key_takeaways'
+    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index' | 'key_takeaways' | 'playground_code'
   > | null
   const allSections = (allSectionsRes.data ?? []) as Pick<
     CourseSectionRow,
@@ -164,6 +164,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       completedCount={completedSet.size}
       totalCount={allSections.length}
       transcript={transcript as any[]}
+      playgroundCode={section.playground_code}
       courseTitle={course.title}
       sectionTitle={section.title}
       ytVideoId={section.yt_video_id}
@@ -177,6 +178,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
         endTimeSeconds={section.end_time_seconds}
         textSummary={section.text_summary}
         transcript={transcript}
+        playgroundCode={section.playground_code}
         quiz={
           quiz
             ? {

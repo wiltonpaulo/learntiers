@@ -109,6 +109,96 @@ export async function generateTakeawaysAction(sectionId: string) {
   }
 }
 
+export async function generatePlaygroundCodeAction(sectionId: string) {
+  const supabase = createAdminClient()
+
+  // 1. Fetch section and course context
+  const { data: sectionData, error: sectionError } = await supabase
+    .from('course_sections')
+    .select('id, title, transcript, course_id, start_time_seconds, end_time_seconds')
+    .eq('id', sectionId)
+    .single()
+
+  const section = sectionData as any
+  if (sectionError || !section) return { error: 'Section not found' }
+
+  // 2. Determine transcript
+  let transcriptData = section.transcript
+  if (!transcriptData && section.course_id) {
+    const { data: courseData } = await supabase.from('courses').select('transcript').eq('id', section.course_id).single()
+    transcriptData = (courseData as any)?.transcript
+  }
+
+  // Handle URL transcript if it's a string (new S3 logic)
+  if (typeof transcriptData === 'string' && transcriptData.startsWith('http')) {
+    const res = await fetch(transcriptData)
+    if (res.ok) transcriptData = await res.json()
+  }
+
+  if (!transcriptData || !Array.isArray(transcriptData)) {
+    return { error: 'No transcript available for code generation.' }
+  }
+
+  const contextText = transcriptData
+    .filter((s: any) => s.start >= section.start_time_seconds && s.start <= section.end_time_seconds)
+    .map((s: any) => s.text)
+    .join(' ')
+
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) return { error: 'GROQ_API_KEY not configured.' }
+
+  try {
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert developer assistant. Based on the video transcript provided, detect the most appropriate programming language or file format discussed (e.g. React, Python, YAML, JSON, Dockerfile, etc).
+            
+            Create a single-file example that demonstrates the concepts discussed in this lesson.
+            
+            REQUIREMENTS:
+            - The code must be high-quality and idiomatic.
+            - Include comments explaining the code based on the lesson context.
+            - Detect the best filename (e.g. App.js, script.py, config.yaml, index.html).
+            - Return ONLY a JSON object with:
+              "filename": the suggested name of the file.
+              "code": the string of the source code.`,
+          },
+          {
+            role: 'user',
+            content: `Lesson Title: ${section.title}\nTranscript: ${contextText}`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.6,
+      }),
+    })
+
+    const result = await response.json()
+    const content = JSON.parse(result.choices[0].message.content)
+    const { filename, code } = content
+
+    // 3. Save to Database (We save as a JSON string to keep both filename and code)
+    const payload = JSON.stringify({ filename, code })
+    await (supabase.from('course_sections') as any)
+      .update({ playground_code: payload })
+      .eq('id', sectionId)
+
+    revalidatePath('/')
+    return { success: true, filename, code }
+  } catch (err) {
+    console.error('Code generation error:', err)
+    return { error: 'Failed to generate code.' }
+  }
+}
+
 export async function chatWithAIAction(sectionId: string, question: string, history: { role: 'user' | 'assistant', content: string }[]) {
   const supabase = createAdminClient()
   const apiKey = process.env.GROQ_API_KEY
