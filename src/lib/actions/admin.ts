@@ -37,11 +37,10 @@ async function uploadTranscriptToS3(courseId: string, transcript: any) {
     ContentType: 'application/json'
   }))
 
-  // Construct the public URL (assuming the bucket/folder is public)
-  // For Supabase S3, the format is usually: {S3_ENDPOINT}/{S3_BUCKET}/{Key}
-  // But for better portability, we can store just the key or the full URL
-  const endpoint = process.env.S3_ENDPOINT?.replace(/\/s3$/, '')
-  return `${endpoint}/${S3_BUCKET}/${key}`
+  // Construct the standard Supabase Public URL
+  // Format: https://[project-id].supabase.co/storage/v1/object/public/[bucket]/[key]
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '')
+  return `${supabaseUrl}/storage/v1/object/public/${S3_BUCKET}/${key}`
 }
 
 // ─── Courses ──────────────────────────────────────────────────────────────────
