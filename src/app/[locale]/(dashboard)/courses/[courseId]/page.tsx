@@ -26,7 +26,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
 
   const loginMessage = encodeURIComponent('Log in or create a free account to start learning.')
 
-  const [courseRes, sectionsRes, progressRes, certificateRes] = await Promise.all([
+  const [courseRes, sectionsRes, progressRes, certificateRes, settingsRes] = await Promise.all([
     supabase.from('courses').select('*').eq('id', courseId).single(),
     supabase
       .from('course_sections')
@@ -35,12 +35,14 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
       .order('order_index'),
     user ? supabase.from('user_progress').select('section_id, is_completed').eq('user_id', user.id) : null,
     user ? supabase.from('certificates').select('*').eq('user_id', user.id).eq('course_id', courseId).single() : null,
+    user ? supabase.from('user_course_settings').select('*').eq('user_id', user.id).eq('course_id', courseId).maybeSingle() : null,
   ])
 
   const course = courseRes.data as CourseRow | null
   const sections = (sectionsRes.data ?? []) as Pick<CourseSectionRow, 'id' | 'title' | 'start_time_seconds' | 'end_time_seconds'>[]
   const userProgress = (progressRes?.data ?? []) as Pick<UserProgressRow, 'section_id' | 'is_completed'>[]
   let certificate = certificateRes?.data as any | null
+  const settings = settingsRes?.data as any | null
 
   if (!course) {
     notFound()
@@ -70,7 +72,8 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   }
 
   const firstIncomplete = sections.find((s) => !completedSet.has(s.id))
-  const ctaSection = firstIncomplete ?? sections[0]
+  const resumeSection = sections.find(s => s.id === settings?.last_section_id) || firstIncomplete || sections[0]
+  const ctaSection = resumeSection
   const isLoggedIn = !!user
   const isAdmin = user?.app_metadata?.role === 'admin'
 
@@ -214,13 +217,14 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                     Preview this course
                   </div>
                 </div>
-                <div className="p-6 space-y-6">
+                  <div className="p-6 space-y-6">
                   <div className="text-3xl font-extrabold">Free</div>
                   <Link
                     href={isLoggedIn ? `/${locale}/courses/${courseId}/sections/${ctaSection.id}` : `/${locale}/login?message=${loginMessage}`}
-                    className="flex w-full items-center justify-center gap-2 bg-primary text-primary-foreground rounded-none py-4 text-base font-bold hover:bg-primary/90 transition-all"
+                    className="flex w-full items-center justify-between bg-primary text-primary-foreground rounded-xl px-6 py-4 text-base font-bold hover:bg-primary/90 transition-all group"
                   >
-                    {isLoggedIn ? (completedCount > 0 ? 'Continue Learning' : 'Start Course') : 'Log in to Start'}
+                    <span>{isLoggedIn ? (completedCount > 0 ? 'Continue Learning' : 'Start Course') : 'Log in to Start'}</span>
+                    <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
                   </Link>
 
                   {certificate && (

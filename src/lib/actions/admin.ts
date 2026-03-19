@@ -263,6 +263,7 @@ export async function createSectionAction(formData: FormData) {
     start_time_seconds: parseInt(formData.get('start_time_seconds') as string, 10),
     end_time_seconds: parseInt(formData.get('end_time_seconds') as string, 10),
     text_summary: (formData.get('text_summary') as string) || null,
+    playground_code: (formData.get('playground_code') as string) || null,
     order_index: count ?? 0,
   } as never)
 
@@ -295,6 +296,7 @@ export async function updateSectionAction(formData: FormData) {
     start_time_seconds: parseInt(formData.get('start_time_seconds') as string, 10),
     end_time_seconds: parseInt(formData.get('end_time_seconds') as string, 10),
     text_summary: (formData.get('text_summary') as string) || null,
+    playground_code: (formData.get('playground_code') as string) || null,
     order_index: parseInt(formData.get('order_index') as string, 10),
   }
 

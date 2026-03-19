@@ -47,7 +47,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     const containerRef = useRef<HTMLDivElement>(null)
     const lastElapsedRef = useRef<number>(0) // Ref para manter o tempo exato entre remontagens
     
-    const { isCinemaMode, setIsCinemaMode, isAISidebarOpen, setIsAISidebarOpen } = useSectionLayout()
+    const { isCinemaMode, setIsCinemaMode, isAISidebarOpen, setIsAISidebarOpen, setIsSidebarOpen } = useSectionLayout()
 
     const [hasMounted, setHasMounted] = useState(false)
     const [playing, setPlaying] = useState(false)
@@ -378,7 +378,15 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                 className={cn("h-9 w-9", isCinemaMode ? "text-primary bg-primary/5" : "text-slate-400")}
                 onClick={() => {
                   if (isTheaterMode) toggleTheater?.()
-                  setIsCinemaMode(!isCinemaMode)
+                  const nextCinemaMode = !isCinemaMode
+                  setIsCinemaMode(nextCinemaMode)
+                  // When exiting Cinema Mode, ensure the lessons sidebar comes back
+                  // When entering Cinema Mode, ensure it is closed for full focus
+                  if (!nextCinemaMode) {
+                    setIsSidebarOpen(true)
+                  } else {
+                    setIsSidebarOpen(false)
+                  }
                 }}
                 title="Cinema mode"
               >

@@ -42,6 +42,7 @@ export interface CourseSectionRow {
   text_summary: string | null
   transcript: Json | null
   key_takeaways: Json | null
+  playground_code: string | null
   order_index: number
   created_at: string
 }

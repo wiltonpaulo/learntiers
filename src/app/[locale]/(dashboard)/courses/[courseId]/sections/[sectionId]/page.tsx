@@ -32,7 +32,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       .single(),
     supabase
       .from('course_sections')
-      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index, key_takeaways')
+      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index, key_takeaways, playground_code')
       .eq('id', sectionId)
       .eq('course_id', courseId)
       .single(),
@@ -57,7 +57,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'transcript' | 'youtube_channel_name' | 'youtube_channel_url'> | null
   const section = sectionRes.data as Pick<
     CourseSectionRow,
-    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index' | 'key_takeaways'
+    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index' | 'key_takeaways' | 'playground_code'
   > | null
   const allSections = (allSectionsRes.data ?? []) as Pick<
     CourseSectionRow,
@@ -164,11 +164,14 @@ export default async function SectionPage({ params }: SectionPageProps) {
       completedCount={completedSet.size}
       totalCount={allSections.length}
       transcript={transcript as any[]}
+      playgroundCode={section.playground_code}
       courseTitle={course.title}
       sectionTitle={section.title}
       ytVideoId={section.yt_video_id}
+      startTimeSeconds={section.start_time_seconds}
       youtubeChannelName={course.youtube_channel_name}
       youtubeChannelUrl={course.youtube_channel_url}
+      nextSection={nextSection ? { id: nextSection.id, title: nextSection.title } : null}
     >
       <SectionView
         sectionId={section.id}
@@ -177,6 +180,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
         endTimeSeconds={section.end_time_seconds}
         textSummary={section.text_summary}
         transcript={transcript}
+        playgroundCode={section.playground_code}
         quiz={
           quiz
             ? {
@@ -192,22 +196,8 @@ export default async function SectionPage({ params }: SectionPageProps) {
         onNextSection={nextSection ? nextSectionAction : undefined}
       />
 
-      {/* Next lesson CTA (Bottom) */}
-      {nextSection ? (
-        <div className="rounded-xl border bg-muted/30 p-4 flex items-center justify-between gap-4 mt-8">
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground mb-0.5">Up next</p>
-            <p className="text-sm font-semibold truncate">{nextSection.title}</p>
-          </div>
-          <Link
-            href={`/${locale}/courses/${courseId}/sections/${nextSection.id}`}
-            className="shrink-0 flex items-center gap-1.5 bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            <PlayCircle className="w-4 h-4" />
-            Next
-          </Link>
-        </div>
-      ) : (
+      {/* Simple end of section indicator */}
+      {!nextSection && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 flex flex-col items-center text-center gap-4 mt-8">
           <div className="space-y-1">
             <p className="text-amber-600 dark:text-amber-500 font-bold flex items-center justify-center gap-2">

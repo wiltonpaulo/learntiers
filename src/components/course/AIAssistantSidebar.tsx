@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { chatWithAIAction } from '@/lib/actions/ai'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useSectionLayout } from './SectionLayoutClient'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -30,9 +31,8 @@ const SUGGESTED_QUESTIONS = [
 ]
 
 export function AIAssistantSidebar({ sectionId, isOpen, onClose, hideHeader = false }: AIAssistantSidebarProps) {
-  const [messages, setMessages] = useState<Message[]>([])
+  const { messages, setMessages, isChatLoading: isLoading, setIsChatLoading: setIsLoading } = useSectionLayout()
   const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -145,7 +145,9 @@ export function AIAssistantSidebar({ sectionId, isOpen, onClose, hideHeader = fa
                     {m.role === 'user' ? (
                       m.content
                     ) : (
-                      <div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:text-slate-100 max-w-none">
+                      <div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:text-slate-100 max-w-none break-words overflow-hidden
+                        prose-ul:list-disc prose-ul:pl-4 prose-ol:list-decimal prose-ol:pl-4
+                        prose-li:my-1 prose-p:my-3 first:prose-p:mt-0 last:prose-p:mb-0">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {m.content}
                         </ReactMarkdown>
