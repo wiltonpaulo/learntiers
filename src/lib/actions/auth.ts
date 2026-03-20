@@ -10,16 +10,18 @@ export async function loginAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const locale = (formData.get('locale') as string) || routing.defaultLocale
+  const next = (formData.get('next') as string) || `/${locale}/courses`
 
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    redirect(`/${locale}/login?error=${encodeURIComponent(error.message)}`)
+    const errorUrl = `/${locale}/login?error=${encodeURIComponent(error.message)}${next ? `&next=${encodeURIComponent(next)}` : ''}`
+    redirect(errorUrl)
   }
 
-  redirect(`/${locale}/courses`)
+  redirect(next)
 }
 
 // ─── Register ─────────────────────────────────────────────────────────────────

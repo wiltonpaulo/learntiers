@@ -20,8 +20,9 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
+    const currentPath = `/${locale}/courses/${courseId}/sections/${sectionId}`
     const loginMessage = encodeURIComponent('Please log in or create an account to view this lesson.')
-    redirect(`/${locale}/login?message=${loginMessage}`)
+    redirect(`/${locale}/login?message=${loginMessage}&next=${encodeURIComponent(currentPath)}`)
   }
 
   const [courseRes, sectionRes, allSectionsRes, quizRes, progressRes, settingsRes] = await Promise.all([

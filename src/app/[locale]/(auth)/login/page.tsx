@@ -7,12 +7,12 @@ import { loginAction } from '@/lib/actions/auth'
 import { GraduationCap } from 'lucide-react'
 
 interface LoginPageProps {
-  searchParams: Promise<{ error?: string; message?: string }>
+  searchParams: Promise<{ error?: string; message?: string; next?: string }>
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const locale = await getLocale()
-  const { error, message } = await searchParams
+  const { error, message, next } = await searchParams
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
@@ -74,6 +74,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
           <form action={loginAction} className="space-y-4">
             <input type="hidden" name="locale" value={locale} />
+            {next && <input type="hidden" name="next" value={next} />}
 
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>

@@ -151,9 +151,11 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
               {sections.map((section, index) => {
                 const done = completedSet.has(section.id)
                 const duration = section.end_time_seconds - section.start_time_seconds
+                
+                const sectionPath = `/${locale}/courses/${courseId}/sections/${section.id}`
                 const targetSectionUrl = isLoggedIn
-                  ? `/${locale}/courses/${courseId}/sections/${section.id}`
-                  : `/${locale}/login?message=${loginMessage}`
+                  ? sectionPath
+                  : `/${locale}/login?message=${loginMessage}&next=${encodeURIComponent(sectionPath)}`
 
                 return (
                   <Link
@@ -219,13 +221,21 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                 </div>
                   <div className="p-6 space-y-6">
                   <div className="text-3xl font-extrabold">Free</div>
-                  <Link
-                    href={isLoggedIn ? `/${locale}/courses/${courseId}/sections/${ctaSection.id}` : `/${locale}/login?message=${loginMessage}`}
-                    className="flex w-full items-center justify-between bg-primary text-primary-foreground rounded-xl px-6 py-4 text-base font-bold hover:bg-primary/90 transition-all group"
-                  >
-                    <span>{isLoggedIn ? (completedCount > 0 ? 'Continue Learning' : 'Start Course') : 'Log in to Start'}</span>
-                    <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  </Link>
+                  
+                  {(() => {
+                    const ctaPath = `/${locale}/courses/${courseId}/sections/${ctaSection.id}`
+                    const ctaUrl = isLoggedIn ? ctaPath : `/${locale}/login?message=${loginMessage}&next=${encodeURIComponent(ctaPath)}`
+                    
+                    return (
+                      <Link
+                        href={ctaUrl}
+                        className="flex w-full items-center justify-between bg-primary text-primary-foreground rounded-xl px-6 py-4 text-base font-bold hover:bg-primary/90 transition-all group"
+                      >
+                        <span>{isLoggedIn ? (completedCount > 0 ? 'Continue Learning' : 'Start Course') : 'Log in to Start'}</span>
+                        <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                      </Link>
+                    )
+                  })()}
 
                   {certificate && (
                     <Link
