@@ -99,12 +99,25 @@ export function SectionLayoutClient({
   const [playerApi, setPlayerApi] = useState<{ getCurrentTime: () => number; seekTo: (seconds: number) => void } | null>(null)
   const { locale, courseId } = useParams()
 
-  // ─── Persistence ───────────────────────────────────────────────────────────
+  // ─── Persistence & Layout States ──────────────────────────────────────────
   const [leftWidth, setLeftWidth] = useState(320)
   const [rightWidth, setRightWidth] = useState(450)
   const [isResizingLeft, setIsResizingLeft] = useState(false)
   const [isResizingRight, setIsResizingRight] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+
+  // Auto-scroll to current lesson
+  useEffect(() => {
+    if (isMounted) {
+      // Find the element with data-current="true" within the sidebar
+      const activeElement = document.querySelector('[data-current="true"]')
+      if (activeElement) {
+        activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+  }, [isMounted, sectionId])
+
+  // ─── Persistence Logic ────────────────────────────────────────────────────
 
   useEffect(() => {
     const savedLeftWidth = localStorage.getItem('lt-layout-left-width')
@@ -362,16 +375,39 @@ export function SectionLayoutClient({
             )}
             style={{ width: isSidebarOpen || isCinemaMode ? `${leftWidth}px` : 0 }}
           >
-            <div className="px-4 py-3 border-b shrink-0 flex items-center justify-between bg-muted/30">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Course content</span>
-              <button 
-                onClick={() => setIsSidebarOpen(false)} 
-                className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform group"
-                title="Close Sidebar"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
+            {/* STICKY SIDEBAR HEADER */}
+            <div className="px-4 py-4 border-b shrink-0 flex flex-col gap-3 bg-muted/20 sticky top-0 z-10 backdrop-blur-md">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-[10px] font-bold text-primary/60 leading-none">Course</span>
+                  <h2 className="text-sm font-bold text-foreground leading-tight line-clamp-2" title={courseTitle}>
+                    {courseTitle}
+                  </h2>
+                </div>
+                <button 
+                  onClick={() => setIsSidebarOpen(false)} 
+                  className="w-7 h-7 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group"
+                  title="Close Sidebar"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {/* Mini Progress */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
+                  <span className="lowercase">progress</span>
+                  <span className="lowercase">{completedCount}/{totalCount} lessons</span>
+                </div>
+                <div className="h-1 w-full bg-primary/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-1000" 
+                    style={{ width: `${progressPercentage}%` }} 
+                  />
+                </div>
+              </div>
             </div>
+
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
               {sidebar}
             </div>

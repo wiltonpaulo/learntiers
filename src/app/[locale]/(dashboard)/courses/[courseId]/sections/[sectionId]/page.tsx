@@ -127,6 +127,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
           <Link
             key={s.id}
             href={`/${locale}/courses/${courseId}/sections/${s.id}`}
+            data-current={isCurrent ? "true" : undefined}
             className={`flex items-start gap-3 px-4 py-3.5 transition-colors group ${
               isCurrent ? 'bg-primary/10' : 'hover:bg-muted/50'
             }`}
