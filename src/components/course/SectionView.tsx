@@ -72,7 +72,7 @@ export function SectionView({
   const [activeLineIndex, setActiveLineIndex] = useState(-1)
   const [isTheaterMode, setIsTheaterMode] = useState(false)
   
-  const { isCinemaMode, setPlayerApi, setCurrentTime: setGlobalCurrentTime } = useSectionLayout()
+  const { isCinemaMode, setPlayerApi, setCurrentTime: setGlobalCurrentTime, autoplay, setAutoplay } = useSectionLayout()
   const params = useParams()
   const courseId = params.courseId as string
 
@@ -131,6 +131,17 @@ export function SectionView({
       setActiveTab('transcript')
     }
   }, [isCinemaMode])
+
+  // ESC shortcut for Theater Mode
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isTheaterMode) {
+        setIsTheaterMode(false)
+      }
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [isTheaterMode])
 
   // Takeaways State
   const [takeaways, setTakeaways] = useState<string[]>(initialTakeaways || [])

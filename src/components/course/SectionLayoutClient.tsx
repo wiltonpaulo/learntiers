@@ -128,6 +128,18 @@ export function SectionLayoutClient({
     localStorage.setItem('lt-layout-ai-open', isAISidebarOpen.toString())
   }, [leftWidth, rightWidth, isSidebarOpen, isCinemaMode, isAISidebarOpen, isMounted])
 
+  // ─── Shortcuts ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isCinemaMode) {
+        setIsCinemaMode(false)
+        setIsSidebarOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [isCinemaMode])
+
   const startResizingLeft = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     setIsResizingLeft(true)
