@@ -4,6 +4,7 @@ import type { CourseSectionRow, CourseRow } from '@/types/database'
 /**
  * Robustly resolves a transcript from a section or its parent course.
  * Handles both JSON arrays and S3 URLs.
+ * Implements safety limits to prevent excessive AI costs.
  */
 export async function getTranscriptForAI(sectionId: string) {
   const supabase = createAdminClient()
@@ -36,7 +37,6 @@ export async function getTranscriptForAI(sectionId: string) {
   // 3. Resolve URL if it's an S3 link
   if (typeof transcriptData === 'string' && transcriptData.startsWith('http')) {
     try {
-      // Direct fetch from Supabase/S3
       const res = await fetch(transcriptData, { cache: 'no-store' })
       if (res.ok) {
         transcriptData = await res.json()
@@ -55,7 +55,7 @@ export async function getTranscriptForAI(sectionId: string) {
   }
 
   // 4. Filter for the specific section window
-  const contextText = transcriptData
+  let contextText = transcriptData
     .filter((s: any) => 
       s.start >= (sectionData.start_time_seconds ?? 0) && 
       s.start <= (sectionData.end_time_seconds ?? 99999)
@@ -63,7 +63,14 @@ export async function getTranscriptForAI(sectionId: string) {
     .map((s: any) => s.text)
     .join(' ')
 
-  if (!contextText || contextText.length < 20) {
+  // 5. SAFETY LIMIT: Truncate to 15,000 characters (approx 3k-4k tokens)
+  // This prevents huge costs and context window errors.
+  const MAX_CHARS = 15000
+  if (contextText.length > MAX_CHARS) {
+    contextText = contextText.slice(0, MAX_CHARS) + "... (transcript truncated for brevity)"
+  }
+
+  if (!contextText || contextText.trim().length < 20) {
     return { error: 'Transcript segment is too short for AI context.' }
   }
 
