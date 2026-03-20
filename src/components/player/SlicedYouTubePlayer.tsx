@@ -60,6 +60,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     const [sectionEnded, setSectionEnded] = useState(isCompleted)
     const [elapsedLocal, setElapsedLocal] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
+    const [autoNextCountdown, setAutoNextCountdown] = useState(5)
 
     // Load persisted player settings
     useEffect(() => {
@@ -84,6 +85,27 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
 
     const sectionDuration = endTimeSeconds - startTimeSeconds
     const progress = (elapsedLocal / sectionDuration) * 100
+
+    // Autoplay Timer Logic
+    useEffect(() => {
+      let interval: NodeJS.Timeout
+      if (sectionEnded && autoplay && onNextSection) {
+        setAutoNextCountdown(5)
+        interval = setInterval(() => {
+          setAutoNextCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(interval)
+              onNextSection()
+              return 0
+            }
+            return prev - 1
+          })
+        }, 1000)
+      } else {
+        setAutoNextCountdown(5)
+      }
+      return () => clearInterval(interval)
+    }, [sectionEnded, autoplay, onNextSection])
 
     useImperativeHandle(ref, () => ({
       seekTo: (seconds: number) => {
@@ -233,8 +255,12 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
               <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle className="w-10 h-10 text-emerald-500" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Section Completed!</h2>
-              <p className="text-slate-500 dark:text-slate-400 text-xs max-w-xs mb-6">Test your knowledge below or move to the next lesson.</p>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Lesson Completed!</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-xs max-w-xs mb-6">
+                {autoplay && onNextSection 
+                  ? `Autoplay ON: Starting next lesson in ${autoNextCountdown}s...` 
+                  : "Test your knowledge below or move to the next lesson."}
+              </p>
               <div className="flex gap-3">
                 <Button variant="outline" size="sm" onClick={handleRestart} className="bg-white dark:bg-transparent border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                   <RotateCcw className="w-3.5 h-3.5 mr-2" /> Retake
@@ -245,6 +271,15 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
                   </Button>
                 )}
               </div>
+
+              {/* Autoplay Toggle in Completion Screen */}
+              <button 
+                onClick={() => setAutoplay(!autoplay)}
+                className="mt-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors opacity-70 hover:opacity-100"
+              >
+                {autoplay ? <Zap className="w-3 h-3 fill-current text-amber-500" /> : <ZapOff className="w-3 h-3" />}
+                Autoplay {autoplay ? "is ON" : "is OFF"}
+              </button>
             </div>
           )}
         </div>
