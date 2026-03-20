@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getTranscriptForAI } from '@/lib/ai-transcript-helper'
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+const AI_SERVICE_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
 export async function generateTakeawaysAction(sectionId: string) {
   const transcriptRes = await getTranscriptForAI(sectionId)
@@ -12,10 +12,10 @@ export async function generateTakeawaysAction(sectionId: string) {
 
   const { contextText } = transcriptRes
   const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) return { error: 'GROQ_API_KEY not configured.' }
+  if (!apiKey) return { error: 'AI service not configured.' }
 
   try {
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetch(AI_SERVICE_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -65,10 +65,10 @@ export async function generatePlaygroundCodeAction(sectionId: string) {
 
   const { contextText, section } = transcriptRes
   const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) return { error: 'GROQ_API_KEY not configured.' }
+  if (!apiKey) return { error: 'AI service not configured.' }
 
   try {
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetch(AI_SERVICE_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,10 +127,10 @@ export async function chatWithAIAction(sectionId: string, question: string, hist
 
   const { contextText, section } = transcriptRes
   const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) return { error: 'GROQ_API_KEY not set.' }
+  if (!apiKey) return { error: 'AI service not set.' }
 
   try {
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetch(AI_SERVICE_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ export async function chatWithAIAction(sectionId: string, question: string, hist
       }),
     })
 
-    if (!response.ok) return { error: 'Failed to reach Groq.' }
+    if (!response.ok) return { error: 'AI service communication failed.' }
 
     const result = await response.json()
     if (!result.choices?.[0]?.message?.content) return { error: 'Empty AI response.' }

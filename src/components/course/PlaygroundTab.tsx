@@ -44,8 +44,21 @@ export function PlaygroundTab({ sectionId, initialCode }: PlaygroundTabProps) {
   const [fileData, setFileData] = useState(parsedInitial);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   const handleGenerateCode = async () => {
+    if (countdown > 0) return;
+    
     setIsGenerating(true);
     setError(null);
     try {
@@ -55,11 +68,12 @@ export function PlaygroundTab({ sectionId, initialCode }: PlaygroundTabProps) {
           filename: result.filename || "script.js",
           code: result.code
         });
+        setCountdown(30);
       } else if (result.error) {
         setError(result.error);
       }
     } catch (err) {
-      setError("Failed to reach AI service.");
+      setError("AI service communication failed.");
     } finally {
       setIsGenerating(false);
     }
@@ -218,8 +232,20 @@ export function PlaygroundTab({ sectionId, initialCode }: PlaygroundTabProps) {
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </Button>
           <div className="w-px h-4 bg-slate-200 dark:bg-white/10 mx-1" />
-          <Button variant="outline" size="sm" onClick={handleGenerateCode} disabled={isGenerating} className="h-8 text-[11px] font-bold gap-2 shadow-sm border-primary/20 hover:bg-primary/5 dark:text-slate-200 transition-all">
-            {isGenerating ? <><Loader2 className="w-3 h-3 animate-spin" />Writing...</> : <><Sparkles className="w-3 h-3 text-primary fill-primary/20" />{isDefaultCode ? "Generate" : "Regenerate"}</>}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleGenerateCode} 
+            disabled={isGenerating || countdown > 0} 
+            className="h-8 text-[11px] font-bold gap-2 shadow-sm border-primary/20 hover:bg-primary/5 dark:text-slate-200 transition-all min-w-[100px]"
+          >
+            {isGenerating ? (
+              <><Loader2 className="w-3 h-3 animate-spin" />Writing...</>
+            ) : countdown > 0 ? (
+              <><Loader2 className="w-3 h-3 animate-spin" />Wait {countdown}s</>
+            ) : (
+              <><Sparkles className="w-3 h-3 text-primary fill-primary/20" />{isDefaultCode ? "Generate" : "Regenerate"}</>
+            )}
           </Button>
         </div>
       </div>
