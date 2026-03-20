@@ -24,7 +24,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
     redirect(`/${locale}/login?message=${loginMessage}`)
   }
 
-  const [courseRes, sectionRes, allSectionsRes, quizRes, progressRes] = await Promise.all([
+  const [courseRes, sectionRes, allSectionsRes, quizRes, progressRes, settingsRes] = await Promise.all([
     supabase
       .from('courses')
       .select('id, title, transcript, youtube_channel_name, youtube_channel_url')
@@ -52,6 +52,14 @@ export default async function SectionPage({ params }: SectionPageProps) {
           .select('section_id, is_completed')
           .eq('user_id', user.id)
       : Promise.resolve({ data: [] }),
+    user
+      ? supabase
+          .from('user_course_settings')
+          .select('last_section_id, last_time_seconds')
+          .eq('user_id', user.id)
+          .eq('course_id', courseId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ])
 
   const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'transcript' | 'youtube_channel_name' | 'youtube_channel_url'> | null
@@ -68,8 +76,13 @@ export default async function SectionPage({ params }: SectionPageProps) {
     'id' | 'question_text' | 'options_json' | 'correct_answer_index'
   > | null
   const progress = (progressRes.data ?? []) as Pick<UserProgressRow, 'section_id' | 'is_completed'>[]
+  const settings = settingsRes.data as { last_section_id: string; last_time_seconds: number } | null
 
   if (!section || !course) notFound()
+
+  // Use the saved time only if it's the SAME section
+  const initialSavedTime = (settings?.last_section_id === sectionId) ? settings.last_time_seconds : null
+
 
   // Resolve transcript (could be URL or pre-parsed JSON)
   const transcript = await resolveTranscript(course.transcript)
@@ -193,6 +206,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
         }
         initialTakeaways={section.key_takeaways as string[]}
         initiallyCompleted={completedSet.has(section.id)}
+        initialSavedTime={initialSavedTime}
         onNextSection={nextSection ? nextSectionAction : undefined}
       />
 

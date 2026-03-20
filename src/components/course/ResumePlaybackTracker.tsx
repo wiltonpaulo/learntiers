@@ -14,10 +14,10 @@ interface ResumePlaybackTrackerProps {
  * Saves to both localStorage (instant) and Database (sync).
  */
 export function ResumePlaybackTracker({ courseId, sectionId, currentTime }: ResumePlaybackTrackerProps) {
-  const lastSavedTimeRef = useRef<number>(0)
+  const lastSavedTimeRef = useRef<number>(currentTime)
 
   useEffect(() => {
-    // We only save every 10 seconds to the DB to avoid excessive requests
+    // We only save every 15 seconds to the DB to avoid excessive requests
     // But we save to localStorage every 5 seconds for local continuity
     const diff = Math.abs(currentTime - lastSavedTimeRef.current)
     

@@ -33,6 +33,7 @@ interface SectionViewProps {
   textSummary: string | null
   transcript: TranscriptSegment[] | null
   playgroundCode?: string | null
+  initialSavedTime?: number | null
   quiz: {
     id: string
     questionText: string
@@ -55,6 +56,7 @@ export function SectionView({
   textSummary,
   transcript,
   playgroundCode,
+  initialSavedTime,
   quiz,
   initialTakeaways,
   initiallyCompleted,
@@ -80,23 +82,38 @@ export function SectionView({
   // Handle Resume logic on first load
   useEffect(() => {
     if (hasResumed || !playerRef.current) return
+    
     const storageKey = `lt-resume-${courseId}`
     const savedData = localStorage.getItem(storageKey)
-    if (savedData) {
+    
+    let resumeTime = 0
+
+    // Priority 1: Database (passed via props)
+    if (initialSavedTime && initialSavedTime > startTimeSeconds + 2) {
+      resumeTime = initialSavedTime
+    } 
+    // Priority 2: LocalStorage
+    else if (savedData) {
       try {
         const { sectionId: savedSectionId, time } = JSON.parse(savedData)
         if (savedSectionId === sectionId && time > startTimeSeconds + 5) {
-          setTimeout(() => {
-            playerRef.current?.seekTo(time)
-            setHasResumed(true)
-          }, 1000)
+          resumeTime = time
         }
       } catch (e) {
         console.error("Resume error:", e)
       }
     }
-    setHasResumed(true)
-  }, [sectionId, courseId, startTimeSeconds, hasResumed])
+
+    if (resumeTime > 0) {
+      setTimeout(() => {
+        playerRef.current?.seekTo(resumeTime)
+        setHasResumed(true)
+      }, 1000)
+    } else {
+      setHasResumed(true)
+    }
+  }, [sectionId, courseId, startTimeSeconds, hasResumed, initialSavedTime])
+
 
   // Register Player API in global layout context
   useEffect(() => {
