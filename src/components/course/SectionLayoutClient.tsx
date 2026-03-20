@@ -27,6 +27,8 @@ interface SectionLayoutContextType {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   isChatLoading: boolean
   setIsChatLoading: (v: boolean) => void
+  autoplay: boolean
+  setAutoplay: (v: boolean) => void
   draftNoteContent: string
   setDraftNoteContent: (v: string) => void
   draftCapturedTime: number | null
@@ -90,6 +92,7 @@ export function SectionLayoutClient({
   const [isAISidebarOpen, setIsAISidebarOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [isChatLoading, setIsChatLoading] = useState(false)
+  const [autoplay, setAutoplay] = useState(true)
   const [currentTime, setCurrentTime] = useState(0)
   const [draftNoteContent, setDraftNoteContent] = useState('')
   const [draftCapturedTime, setDraftCapturedTime] = useState<number | null>(null)
@@ -109,12 +112,14 @@ export function SectionLayoutClient({
     const savedSidebarOpen = localStorage.getItem('lt-layout-sidebar-open')
     const savedCinemaMode = localStorage.getItem('lt-layout-cinema-mode')
     const savedAIOpen = localStorage.getItem('lt-layout-ai-open')
+    const savedAutoplay = localStorage.getItem('lt-layout-autoplay')
     
     if (savedLeftWidth) setLeftWidth(parseInt(savedLeftWidth, 10))
     if (savedRightWidth) setRightWidth(parseInt(savedRightWidth, 10))
     if (savedSidebarOpen !== null) setIsSidebarOpen(savedSidebarOpen === 'true')
     if (savedCinemaMode !== null) setIsCinemaMode(savedCinemaMode === 'true')
     if (savedAIOpen !== null) setIsAISidebarOpen(savedAIOpen === 'true')
+    if (savedAutoplay !== null) setAutoplay(savedAutoplay === 'true')
     
     setIsMounted(true)
   }, [])
@@ -126,7 +131,8 @@ export function SectionLayoutClient({
     localStorage.setItem('lt-layout-sidebar-open', isSidebarOpen.toString())
     localStorage.setItem('lt-layout-cinema-mode', isCinemaMode.toString())
     localStorage.setItem('lt-layout-ai-open', isAISidebarOpen.toString())
-  }, [leftWidth, rightWidth, isSidebarOpen, isCinemaMode, isAISidebarOpen, isMounted])
+    localStorage.setItem('lt-layout-autoplay', autoplay.toString())
+  }, [leftWidth, rightWidth, isSidebarOpen, isCinemaMode, isAISidebarOpen, autoplay, isMounted])
 
   // ─── Shortcuts ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -194,6 +200,7 @@ export function SectionLayoutClient({
     isSidebarOpen, setIsSidebarOpen,
     messages, setMessages,
     isChatLoading, setIsChatLoading,
+    autoplay, setAutoplay,
     draftNoteContent, setDraftNoteContent,
     draftCapturedTime, setDraftCapturedTime,
     startTimeSeconds,

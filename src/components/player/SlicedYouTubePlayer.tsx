@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react'
 import ReactPlayer from 'react-player'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, RotateCcw, ArrowRight, Play, Pause, Volume2, VolumeX, Monitor, Square, Gauge, Sparkles, Maximize, Columns, Captions } from 'lucide-react'
+import { CheckCircle, RotateCcw, ArrowRight, Play, Pause, Volume2, VolumeX, Monitor, Square, Gauge, Sparkles, Maximize, Columns, Captions, Zap, ZapOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSectionLayout } from '@/components/course/SectionLayoutClient'
 
@@ -48,7 +48,7 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
     const containerRef = useRef<HTMLDivElement>(null)
     const lastElapsedRef = useRef<number>(0) // Ref para manter o tempo exato entre remontagens
     
-    const { isCinemaMode, setIsCinemaMode, isAISidebarOpen, setIsAISidebarOpen, setIsSidebarOpen } = useSectionLayout()
+    const { isCinemaMode, setIsCinemaMode, isAISidebarOpen, setIsAISidebarOpen, setIsSidebarOpen, autoplay, setAutoplay } = useSectionLayout()
 
     const [hasMounted, setHasMounted] = useState(false)
     const [playing, setPlaying] = useState(false)
@@ -337,6 +337,17 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
             </span>
 
             <div className="flex items-center gap-1 border-l pl-3 ml-1 border-slate-100 dark:border-white/10 shrink-0">
+              {/* Autoplay Toggle */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setAutoplay(!autoplay)}
+                className={cn("h-9 w-9", autoplay ? "text-amber-500 bg-amber-500/5" : "text-slate-400")}
+                title={autoplay ? "Autoplay ON" : "Autoplay OFF"}
+              >
+                {autoplay ? <Zap className="w-4 h-4 fill-current" /> : <ZapOff className="w-4 h-4" />}
+              </Button>
+
               {/* ✨ Ask AI Button */}
               {!isAISidebarOpen && !isCinemaMode && (
                 <Button 
