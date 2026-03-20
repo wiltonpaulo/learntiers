@@ -24,6 +24,7 @@ export interface SlicedYouTubePlayerProps {
 
 export interface SlicedYouTubePlayerRef {
   seekTo: (seconds: number) => void
+  getCurrentTime: () => number
 }
 
 const POLL_INTERVAL_MS = 100 
@@ -94,6 +95,9 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
           playerRef.current?.seekTo(seconds, 'seconds')
           setPlaying(true)
         }, 50)
+      },
+      getCurrentTime: () => {
+        return playerRef.current?.getCurrentTime() || (startTimeSeconds + lastElapsedRef.current)
       }
     }))
 

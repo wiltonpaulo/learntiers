@@ -101,11 +101,11 @@ export function SectionView({
   // Register Player API in global layout context
   useEffect(() => {
     setPlayerApi({
-      getCurrentTime: () => currentTime, // Still need this for some components but let's make the OBJECT stable
+      getCurrentTime: () => playerRef.current?.getCurrentTime() || 0,
       seekTo: (seconds: number) => playerRef.current?.seekTo(seconds)
     })
     return () => setPlayerApi(null)
-  }, [setPlayerApi]) // Removed currentTime from dependencies
+  }, [setPlayerApi])
 
   // Ensure modes are exclusive
   useEffect(() => {
