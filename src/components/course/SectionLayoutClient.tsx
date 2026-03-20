@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import { useState, createContext, useContext, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { PanelLeftClose, PanelLeftOpen, GraduationCap, Trophy, ChevronLeft, ChevronRight } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, GraduationCap, Trophy, ChevronLeft, ChevronRight, Youtube, ExternalLink } from 'lucide-react'
 import { AIAssistantSidebar } from './AIAssistantSidebar'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
@@ -229,16 +229,58 @@ export function SectionLayoutClient({
               <span className="font-bold text-lg text-white tracking-tight hidden sm:block">LearnTiers</span>
             </Link>
             <div className="h-6 w-px bg-white/20 mx-1 shrink-0" />
-            <Link 
-              href={`/${locale}/courses/${courseId}`}
-              className="flex items-center gap-1.5 text-base font-medium text-slate-300 hover:text-white transition-colors truncate"
-            >
-              <ChevronLeft className="w-4 h-4 shrink-0" />
-              <span className="truncate">{courseTitle}</span>
-            </Link>
+            <div className="flex flex-col min-w-0">
+              <Link 
+                href={`/${locale}/courses/${courseId}`}
+                className="flex items-center gap-1.5 text-base font-medium text-slate-300 hover:text-white transition-colors truncate"
+              >
+                <ChevronLeft className="w-4 h-4 shrink-0" />
+                <span className="truncate">{courseTitle}</span>
+              </Link>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
+            {/* Creator Section */}
+            <div className="hidden lg:flex items-center gap-4">
+              <div className="flex flex-col items-end leading-none gap-1">
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Creator</span>
+                {youtubeChannelName ? (
+                  <a 
+                    href={youtubeChannelUrl || '#'} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-white hover:text-primary transition-colors"
+                  >
+                    {youtubeChannelName}
+                  </a>
+                ) : (
+                  <span className="text-xs font-bold text-white/20">Unknown</span>
+                )}
+              </div>
+
+              <div className="h-8 w-px bg-white/10" />
+
+              {/* YouTube Source Section */}
+              <a 
+                href={`https://youtube.com/watch?v=${ytVideoId}`}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 hover:opacity-80 transition-all group"
+              >
+                <div className="flex flex-col items-end leading-none gap-1">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-400">Source</span>
+                  <span className="text-xs font-bold text-white/90">Watch on Youtube</span>
+                </div>
+                <div className="w-10 h-7 bg-white/5 rounded flex items-center justify-center border border-white/10 group-hover:border-red-500/50 group-hover:bg-red-500/5 transition-all">
+                  <Youtube className="w-5 h-5 text-red-500" />
+                </div>
+              </a>
+            </div>
+
+            <div className="h-8 w-px bg-white/10 hidden md:block" />
+
+            {/* Progress Section */}
             <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
               <HoverCard openDelay={100} closeDelay={100}>
                 <HoverCardTrigger asChild>
