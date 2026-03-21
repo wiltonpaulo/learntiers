@@ -2,22 +2,20 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { routing } from '@/i18n/routing'
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
 export async function loginAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
-  const next = (formData.get('next') as string) || `/${locale}/courses`
+  const next = (formData.get('next') as string) || '/courses'
 
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    const errorUrl = `/${locale}/login?error=${encodeURIComponent(error.message)}${next ? `&next=${encodeURIComponent(next)}` : ''}`
+    const errorUrl = `/login?error=${encodeURIComponent(error.message)}${next ? `&next=${encodeURIComponent(next)}` : ''}`
     redirect(errorUrl)
   }
 
@@ -30,7 +28,6 @@ export async function registerAction(formData: FormData) {
   const name = formData.get('name') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
 
   const supabase = await createClient()
 
@@ -43,11 +40,11 @@ export async function registerAction(formData: FormData) {
   })
 
   if (error) {
-    redirect(`/${locale}/register?error=${encodeURIComponent(error.message)}`)
+    redirect(`/register?error=${encodeURIComponent(error.message)}`)
   }
 
   // After sign-up, redirect to login (or courses if email confirmation is disabled)
-  redirect(`/${locale}/login?message=Check+your+email+to+confirm+your+account.`)
+  redirect('/login?message=Check+your+email+to+confirm+your+account.')
 }
 
 // ─── Update Profile ───────────────────────────────────────────────────────────
@@ -56,7 +53,6 @@ export async function updateProfileAction(formData: FormData) {
   const name = formData.get('name') as string
   const phone = formData.get('phone') as string
   const country = formData.get('country') as string
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -72,7 +68,7 @@ export async function updateProfileAction(formData: FormData) {
     .eq('id', user.id)
 
   if (error) {
-    redirect(`/${locale}/settings?error=${encodeURIComponent(error.message)}`)
+    redirect(`/settings?error=${encodeURIComponent(error.message)}`)
   }
 
   // Also update metadata if possible (optional but good for consistency)
@@ -80,12 +76,11 @@ export async function updateProfileAction(formData: FormData) {
     data: { name }
   })
 
-  redirect(`/${locale}/settings?success=Profile+updated`)
+  redirect('/settings?success=Profile+updated')
 }
 
 export async function updatePasswordAction(formData: FormData) {
   const password = formData.get('password') as string
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
 
   const supabase = await createClient()
   
@@ -94,17 +89,16 @@ export async function updatePasswordAction(formData: FormData) {
   })
 
   if (error) {
-    redirect(`/${locale}/settings?error=${encodeURIComponent(error.message)}`)
+    redirect(`/settings?error=${encodeURIComponent(error.message)}`)
   }
 
-  redirect(`/${locale}/settings?success=Password+updated`)
+  redirect('/settings?success=Password+updated')
 }
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 
 export async function logoutAction(formData: FormData) {
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
   const supabase = await createClient()
   await supabase.auth.signOut()
-  redirect(`/${locale}/login`)
+  redirect('/login')
 }

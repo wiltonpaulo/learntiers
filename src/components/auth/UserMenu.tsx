@@ -2,7 +2,6 @@
 
 import { UserProfileDropdown } from "./UserProfileDropdown"
 import { logoutAction } from "@/lib/actions/auth"
-import { useRouter } from "next/navigation"
 
 interface UserMenuProps {
   user: {
@@ -10,13 +9,11 @@ interface UserMenuProps {
     email?: string | null
     image?: string | null
   }
-  locale: string
 }
 
-export function UserMenu({ user, locale }: UserMenuProps) {
+export function UserMenu({ user }: UserMenuProps) {
   const handleLogout = async () => {
     const formData = new FormData()
-    formData.append("locale", locale)
     await logoutAction(formData)
   }
 
@@ -24,7 +21,6 @@ export function UserMenu({ user, locale }: UserMenuProps) {
     <UserProfileDropdown 
       user={user} 
       onLogout={handleLogout}
-      locale={locale}
     />
   )
 }

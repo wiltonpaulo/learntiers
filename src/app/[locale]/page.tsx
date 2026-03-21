@@ -1,14 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
-import { getLocale } from 'next-intl/server'
+import { Link } from '@/i18n/routing'
 import { GraduationCap, BookOpen, Clock, ChevronRight, Trophy, Star, Users, ShieldCheck } from 'lucide-react'
 import type { CourseRow } from '@/types/database'
 
 /**
  * Home Page — Landing page with the same professional style as the course details.
  */
-export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params
+export default async function HomePage() {
   const supabase = await createClient()
 
   // Fetch courses to display on the home screen
@@ -46,7 +44,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </div>
             {isAdmin && (
               <Link
-                href={`/${locale}/admin`}
+                href="/admin"
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-bold hover:bg-amber-500/20 transition-colors"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -82,7 +80,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             <div className="flex flex-wrap gap-4 pt-4">
               <Link
-                href={user ? `/${locale}/my-learning` : `/${locale}/courses`}
+                href={user ? "/my-learning" : "/courses"}
                 className="bg-primary text-primary-foreground px-8 py-4 rounded-none font-bold text-lg hover:bg-primary/90 transition-all flex items-center gap-2"
               >
                 {user ? 'Continue My Learning' : 'Explore All Courses'}
@@ -107,7 +105,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <h2 className="text-3xl font-bold tracking-tight">Featured Courses</h2>
             <p className="text-muted-foreground mt-2">Start your learning journey today with our top-rated content.</p>
           </div>
-          <Link href={`/${locale}/courses`} className="text-primary font-bold hover:underline hidden md:block">
+          <Link href="/courses" className="text-primary font-bold hover:underline hidden md:block">
             View all courses
           </Link>
         </div>
@@ -116,7 +114,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           {courses?.map((course) => (
             <Link 
               key={course.id} 
-              href={`/${locale}/courses/${course.id}`}
+              href={`/courses/${course.id}`}
               className="group border bg-card hover:shadow-xl transition-all duration-300 flex flex-col"
             >
               <div className="aspect-video bg-muted relative overflow-hidden">

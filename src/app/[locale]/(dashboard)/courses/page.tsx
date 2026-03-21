@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { getLocale } from 'next-intl/server'
 import { Badge } from '@/components/ui/badge'
 import { BookOpen, Clock, ArrowRight, GraduationCap, ShieldCheck, Search, Filter } from 'lucide-react'
@@ -53,7 +53,7 @@ export default async function CoursesPage({
           {isAdmin && (
             <div className="flex justify-end mb-4">
               <Link
-                href={`/${locale}/admin`}
+                href="/admin"
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-bold hover:bg-amber-500/20 transition-colors"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -76,7 +76,7 @@ export default async function CoursesPage({
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto max-w-6xl px-4 py-4 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex items-center gap-4 w-full md:w-auto">
-            <form action={`/${locale}/courses`} method="GET" className="relative w-full md:w-80">
+            <form action="/courses" method="GET" className="relative w-full md:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
@@ -103,7 +103,7 @@ export default async function CoursesPage({
           {courses?.map((course) => (
             <Link
               key={course.id}
-              href={`/${locale}/courses/${course.id}`}
+              href={`/courses/${course.id}`}
               className="group flex flex-col bg-card border hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
             >
               {/* Thumbnail */}
