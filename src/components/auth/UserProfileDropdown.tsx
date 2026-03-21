@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { 
   User, 
   Settings, 
@@ -29,13 +29,11 @@ interface UserProfileDropdownProps {
     image?: string | null
   }
   onLogout?: () => void
-  locale: string
 }
 
 export function UserProfileDropdown({ 
   user, 
-  onLogout,
-  locale
+  onLogout
 }: UserProfileDropdownProps) {
   const [isOpen, setIsOpen] = React.useState(false)
 
@@ -96,7 +94,7 @@ export function UserProfileDropdown({
         {/* Menu Items */}
         <div className="space-y-0.5">
           <Link 
-            href={`/${locale}/profile`} 
+            href="/profile" 
             className="flex items-center w-full rounded-xl hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all duration-200 py-2.5 px-3 group"
             onClick={() => setIsOpen(false)}
           >
@@ -108,7 +106,7 @@ export function UserProfileDropdown({
           </Link>
 
           <Link 
-            href={`/${locale}/certificates`} 
+            href="/certificates" 
             className="flex items-center w-full rounded-xl hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all duration-200 py-2.5 px-3 group"
             onClick={() => setIsOpen(false)}
           >
@@ -120,7 +118,7 @@ export function UserProfileDropdown({
           </Link>
 
           <Link 
-            href={`/${locale}/settings`} 
+            href="/settings" 
             className="flex items-center w-full rounded-xl hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all duration-200 py-2.5 px-3 group"
             onClick={() => setIsOpen(false)}
           >

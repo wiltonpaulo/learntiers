@@ -3,7 +3,6 @@
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { routing } from '@/i18n/routing'
 import { fetchYouTubeTranscript, fetchYouTubeMetadata } from '@/lib/youtube'
 import { parseSubtitleFile } from '@/lib/subtitle-parser'
 import type { CourseRow, CourseSectionRow } from '@/types/database'
@@ -47,7 +46,6 @@ async function uploadTranscriptToS3(courseId: string, transcript: any) {
 
 export async function createCourseAction(formData: FormData) {
   await assertAdmin()
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
   const db = createAdminClient()
 
   let courseData = {
@@ -84,12 +82,12 @@ export async function createCourseAction(formData: FormData) {
         sectionsToImport = json.sections
       }
     } catch (e) {
-      return redirect(`/${locale}/admin/courses/new?error=${encodeURIComponent('Invalid JSON file format.')}`)
+      return redirect(`/admin/courses/new?error=${encodeURIComponent('Invalid JSON file format.')}`)
     }
   }
 
   if (!courseData.title) {
-    return redirect(`/${locale}/admin/courses/new?error=${encodeURIComponent('Course title is required.')}`)
+    return redirect(`/admin/courses/new?error=${encodeURIComponent('Course title is required.')}`)
   }
 
   // Auto-fetch channel info from the first section if available
@@ -113,7 +111,7 @@ export async function createCourseAction(formData: FormData) {
   } as never).select('id').single()
 
   if (courseError) {
-    return redirect(`/${locale}/admin/courses/new?error=${encodeURIComponent(courseError.message)}`)
+    return redirect(`/admin/courses/new?error=${encodeURIComponent(courseError.message)}`)
   }
 
   const courseId = (course as { id: string }).id
@@ -156,12 +154,11 @@ export async function createCourseAction(formData: FormData) {
     }
   }
 
-  redirect(`/${locale}/admin/courses/${courseId}`)
+  redirect(`/admin/courses/${courseId}`)
 }
 
 export async function updateCourseAction(formData: FormData) {
   await assertAdmin()
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
   const courseId = formData.get('courseId') as string
   const db = createAdminClient()
 
@@ -224,27 +221,25 @@ export async function updateCourseAction(formData: FormData) {
 
   const { error } = await db.from('courses').update(updatePayload as never).eq('id', courseId)
 
-  if (error) redirect(`/${locale}/admin/courses/${courseId}?error=${encodeURIComponent(error.message)}`)
+  if (error) redirect(`/admin/courses/${courseId}?error=${encodeURIComponent(error.message)}`)
 
-  redirect(`/${locale}/admin/courses/${courseId}?success=Course+updated.`)
+  redirect(`/admin/courses/${courseId}?success=Course+updated.`)
 }
 
 export async function deleteCourseAction(formData: FormData) {
   await assertAdmin()
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
   const courseId = formData.get('courseId') as string
   const db = createAdminClient()
 
   await db.from('courses').delete().eq('id', courseId)
 
-  redirect(`/${locale}/admin/courses`)
+  redirect('/admin/courses')
 }
 
 // ─── Sections ─────────────────────────────────────────────────────────────────
 
 export async function createSectionAction(formData: FormData) {
   await assertAdmin()
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
   const courseId = formData.get('courseId') as string
   const db = createAdminClient()
 
@@ -278,14 +273,13 @@ export async function createSectionAction(formData: FormData) {
     }
   }
 
-  if (error) redirect(`/${locale}/admin/courses/${courseId}/sections/new?error=${encodeURIComponent(error.message)}`)
+  if (error) redirect(`/admin/courses/${courseId}/sections/new?error=${encodeURIComponent(error.message)}`)
 
-  redirect(`/${locale}/admin/courses/${courseId}?success=Section+added.`)
+  redirect(`/admin/courses/${courseId}?success=Section+added.`)
 }
 
 export async function updateSectionAction(formData: FormData) {
   await assertAdmin()
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
   const courseId = formData.get('courseId') as string
   const sectionId = formData.get('sectionId') as string
   const db = createAdminClient()
@@ -302,28 +296,26 @@ export async function updateSectionAction(formData: FormData) {
 
   const { error } = await db.from('course_sections').update(updatePayload as never).eq('id', sectionId)
 
-  if (error) redirect(`/${locale}/admin/courses/${courseId}/sections/${sectionId}/edit?error=${encodeURIComponent(error.message)}`)
+  if (error) redirect(`/admin/courses/${courseId}/sections/${sectionId}/edit?error=${encodeURIComponent(error.message)}`)
 
-  redirect(`/${locale}/admin/courses/${courseId}?success=Section+updated.`)
+  redirect(`/admin/courses/${courseId}?success=Section+updated.`)
 }
 
 export async function deleteSectionAction(formData: FormData) {
   await assertAdmin()
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
   const courseId = formData.get('courseId') as string
   const sectionId = formData.get('sectionId') as string
   const db = createAdminClient()
 
   await db.from('course_sections').delete().eq('id', sectionId)
 
-  redirect(`/${locale}/admin/courses/${courseId}?success=Section+deleted.`)
+  redirect(`/admin/courses/${courseId}?success=Section+deleted.`)
 }
 
 // ─── Quizzes ──────────────────────────────────────────────────────────────────
 
 export async function upsertQuizAction(formData: FormData) {
   await assertAdmin()
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
   const courseId = formData.get('courseId') as string
   const sectionId = formData.get('sectionId') as string
   const db = createAdminClient()
@@ -350,19 +342,18 @@ export async function upsertQuizAction(formData: FormData) {
     .from('quizzes')
     .upsert(payload, { onConflict: 'section_id' })
 
-  if (error) redirect(`/${locale}/admin/courses/${courseId}/sections/${sectionId}/edit?error=${encodeURIComponent(error.message)}`)
+  if (error) redirect(`/admin/courses/${courseId}/sections/${sectionId}/edit?error=${encodeURIComponent(error.message)}`)
 
-  redirect(`/${locale}/admin/courses/${courseId}/sections/${sectionId}/edit?success=Quiz+saved.`)
+  redirect(`/admin/courses/${courseId}/sections/${sectionId}/edit?success=Quiz+saved.`)
 }
 
 export async function deleteQuizAction(formData: FormData) {
   await assertAdmin()
-  const locale = (formData.get('locale') as string) || routing.defaultLocale
   const courseId = formData.get('courseId') as string
   const sectionId = formData.get('sectionId') as string
   const db = createAdminClient()
 
   await db.from('quizzes').delete().eq('section_id', sectionId)
 
-  redirect(`/${locale}/admin/courses/${courseId}/sections/${sectionId}/edit?success=Quiz+removed.`)
+  redirect(`/admin/courses/${courseId}/sections/${sectionId}/edit?success=Quiz+removed.`)
 }

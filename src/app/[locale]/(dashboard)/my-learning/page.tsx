@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { getLocale } from 'next-intl/server'
 import { redirect } from 'next/navigation'
 import { 
@@ -25,7 +25,7 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect(`/${locale}/login`)
+    redirect('/login')
   }
 
   // 1. Fetch user data and progress
@@ -41,7 +41,7 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
     supabase.from('courses').select('*').order('created_at', { ascending: false })
   ])
 
-  const userData = userRes.data as UserRow
+  const userData = userRes.data as unknown as UserRow
   const progressEntries = (progressRes.data || []) as any[]
   const allCourses = (allCoursesRes.data || []) as CourseRow[]
   
@@ -156,7 +156,7 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
             <h3 className="text-xl font-bold">You haven't started any courses yet</h3>
             <p className="text-muted-foreground mt-2 mb-8">Browse our courses and start learning today!</p>
             <Link
-              href={`/${locale}/courses`}
+              href="/courses"
               className="inline-flex items-center justify-center bg-primary text-primary-foreground px-6 py-3 font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
             >
               Browse Courses

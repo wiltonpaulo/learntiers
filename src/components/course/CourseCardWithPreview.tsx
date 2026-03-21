@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { useParams } from 'next/navigation'
 
 interface CoursePreviewProps {
@@ -141,7 +141,7 @@ export function CourseCardWithPreview({ course, children, buttonLabel = 'resume'
               <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary transition-colors">
                 <Bookmark className="w-3.5 h-3.5" />
               </Button>
-              <Link href={`/${locale}/courses/${course.id}`}>
+              <Link href={`/courses/${course.id}`}>
                 <Button size="sm" className="h-7 px-3 text-[9px] font-black uppercase tracking-widest gap-1.5 rounded-md shadow-sm">
                   {buttonLabel} <ChevronRight className="w-3.5 h-3.5" />
                 </Button>

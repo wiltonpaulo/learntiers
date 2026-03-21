@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { PanelLeftClose, PanelLeftOpen, GraduationCap, Trophy, ChevronLeft, ChevronRight, Youtube, ExternalLink } from 'lucide-react'
 import { AIAssistantSidebar } from './AIAssistantSidebar'
 import { cn } from '@/lib/utils'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { useParams } from 'next/navigation'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 
@@ -97,7 +97,7 @@ export function SectionLayoutClient({
   const [draftNoteContent, setDraftNoteContent] = useState('')
   const [draftCapturedTime, setDraftCapturedTime] = useState<number | null>(null)
   const [playerApi, setPlayerApi] = useState<{ getCurrentTime: () => number; seekTo: (seconds: number) => void } | null>(null)
-  const { locale, courseId } = useParams()
+  const { courseId } = useParams()
 
   // ─── Persistence & Layout States ──────────────────────────────────────────
   const [leftWidth, setLeftWidth] = useState(320)
@@ -235,7 +235,7 @@ export function SectionLayoutClient({
           style={{ backgroundColor: 'var(--nav-bg)', color: 'var(--nav-fg)' }}
         >
           <div className="flex items-center gap-4 min-w-0 flex-1">
-            <Link href={`/${locale}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
@@ -244,7 +244,7 @@ export function SectionLayoutClient({
             <div className="h-6 w-px bg-white/20 mx-1 shrink-0" />
             <div className="flex flex-col min-w-0">
               <Link 
-                href={`/${locale}/courses/${courseId}`}
+                href={`/courses/${courseId}`}
                 className="flex items-center gap-1.5 text-base font-medium text-slate-300 hover:text-white transition-colors truncate"
               >
                 <ChevronLeft className="w-4 h-4 shrink-0" />
@@ -453,7 +453,7 @@ export function SectionLayoutClient({
             {nextSection && (
               <div className="absolute bottom-6 right-6 z-[40] animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <Link
-                  href={`/${locale}/courses/${courseId}/sections/${nextSection.id}`}
+                  href={`/courses/${courseId}/sections/${nextSection.id}`}
                   className="flex items-center gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-white/10 p-2 pl-4 rounded-full shadow-2xl hover:shadow-primary/20 hover:border-primary/30 transition-all group max-w-[280px]"
                 >
                   <div className="flex flex-col min-w-0">
