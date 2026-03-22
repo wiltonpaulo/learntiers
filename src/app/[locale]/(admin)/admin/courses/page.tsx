@@ -10,7 +10,7 @@ export default async function AdminCoursesPage() {
 
   const { data: courses } = await db
     .from('courses')
-    .select('id, title, description, created_at')
+    .select('id, slug, title, description, created_at')
     .order('created_at', { ascending: false })
 
   const { data: sectionCounts } = await db
@@ -53,7 +53,7 @@ export default async function AdminCoursesPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {courses.map((course: { id: string; title: string; description: string | null; created_at: string }) => (
+              {courses.map((course: any) => (
                 <tr key={course.id} className="hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-3.5">
                     <p className="font-medium leading-snug">{course.title}</p>
@@ -70,7 +70,7 @@ export default async function AdminCoursesPage() {
                   <td className="px-4 py-3.5">
                     <div className="flex items-center justify-end gap-2">
                       <Link
-                        href={`/${locale}/admin/courses/${course.id}`}
+                        href={`/${locale}/admin/courses/${course.slug}`}
                         className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                       >
                         <Pencil className="w-3.5 h-3.5" />

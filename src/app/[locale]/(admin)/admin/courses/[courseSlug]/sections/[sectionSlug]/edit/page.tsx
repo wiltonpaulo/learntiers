@@ -11,33 +11,38 @@ import { ChevronLeft, HelpCircle, Trash2 } from 'lucide-react'
 import type { CourseSectionRow, QuizRow, CourseRow } from '@/types/database'
 
 interface EditSectionPageProps {
-  params: Promise<{ courseId: string; sectionId: string }>
+  params: Promise<{ courseSlug: string; sectionSlug: string }>
   searchParams: Promise<{ error?: string; success?: string }>
 }
 
 export default async function EditSectionPage({ params, searchParams }: EditSectionPageProps) {
-  const { courseId, sectionId } = await params
+  const { courseSlug, sectionSlug } = await params
   const { error, success } = await searchParams
   const locale = await getLocale()
   const db = createAdminClient()
 
-  const [courseRes, sectionRes, quizRes] = await Promise.all([
-    db.from('courses').select('id, title').eq('id', courseId).single(),
-    db.from('course_sections')
+  // First fetch the course by slug
+  const { data: course } = await (db.from('courses').select('id, title').eq('slug', courseSlug).single() as any) as { data: Pick<CourseRow, 'id' | 'title'> | null }
+
+  if (!course) notFound()
+
+  const courseId = course.id
+
+  // Then fetch the section by slug and course_id
+  const { data: section } = await (db.from('course_sections')
       .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index')
-      .eq('id', sectionId)
-      .single(),
-    db.from('quizzes')
+      .eq('slug', sectionSlug)
+      .eq('course_id', courseId)
+      .single() as any) as { data: (Pick<CourseSectionRow, 'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index'>) | null }
+
+  if (!section) notFound()
+
+  const sectionId = section.id
+
+  const { data: quiz } = await (db.from('quizzes')
       .select('id, question_text, options_json, correct_answer_index')
       .eq('section_id', sectionId)
-      .maybeSingle(),
-  ])
-
-  const course = courseRes.data as Pick<CourseRow, 'id' | 'title'> | null
-  const section = sectionRes.data as CourseSectionRow | null
-  const quiz = quizRes.data as Pick<QuizRow, 'id' | 'question_text' | 'options_json' | 'correct_answer_index'> | null
-
-  if (!section || !course) notFound()
+      .maybeSingle() as any) as { data: Pick<QuizRow, 'id' | 'question_text' | 'options_json' | 'correct_answer_index'> | null }
 
   const options = (quiz?.options_json ?? ['', '', '', '']) as string[]
 
@@ -45,7 +50,7 @@ export default async function EditSectionPage({ params, searchParams }: EditSect
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div>
         <Link
-          href={`/${locale}/admin/courses/${courseId}`}
+          href={`/${locale}/admin/courses/${courseSlug}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" /> {course.title}
@@ -79,7 +84,7 @@ export default async function EditSectionPage({ params, searchParams }: EditSect
         }}
         action={updateSectionAction}
         submitLabel="Save changes"
-        cancelHref={`/${locale}/admin/courses/${courseId}`}
+        cancelHref={`/${locale}/admin/courses/${courseSlug}`}
       />
 
       {/* ── Quiz ────────────────────────────────────────────────────────── */}

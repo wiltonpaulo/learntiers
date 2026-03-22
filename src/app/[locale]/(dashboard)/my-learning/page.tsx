@@ -80,6 +80,7 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
 
     return {
       id: course.id,
+      slug: course.slug,
       title: course.title,
       author: course.youtube_channel_name || 'Expert',
       duration: formatDuration(totalSeconds),

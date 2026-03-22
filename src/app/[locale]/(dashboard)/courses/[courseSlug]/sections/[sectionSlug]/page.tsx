@@ -10,43 +10,45 @@ import type { CourseSectionRow, QuizRow, UserProgressRow, CourseRow } from '@/ty
 import { resolveTranscript } from '@/lib/transcript'
 
 interface SectionPageProps {
-  params: Promise<{ courseId: string; sectionId: string }>
+  params: Promise<{ courseSlug: string; sectionSlug: string }>
 }
 
 export default async function SectionPage({ params }: SectionPageProps) {
-  const { sectionId, courseId } = await params
+  const { sectionSlug, courseSlug } = await params
   const locale = await getLocale()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    const currentPath = `/${locale}/courses/${courseId}/sections/${sectionId}`
+    const currentPath = `/${locale}/courses/${courseSlug}/sections/${sectionSlug}`
     const loginMessage = encodeURIComponent('Please log in or create an account to view this lesson.')
     redirect(`/${locale}/login?message=${loginMessage}&next=${encodeURIComponent(currentPath)}`)
   }
 
-  const [courseRes, sectionRes, allSectionsRes, quizRes, progressRes, settingsRes] = await Promise.all([
-    supabase
-      .from('courses')
-      .select('id, title, transcript, youtube_channel_name, youtube_channel_url')
-      .eq('id', courseId)
-      .single(),
+  // First fetch the course by slug to get its ID
+  const { data: courseData } = await (supabase
+    .from('courses')
+    .select('id, title, transcript, youtube_channel_name, youtube_channel_url')
+    .eq('slug', courseSlug)
+    .single() as any) as { data: Pick<CourseRow, 'id' | 'title' | 'transcript' | 'youtube_channel_name' | 'youtube_channel_url'> | null }
+
+  if (!courseData) notFound()
+
+  const courseId = courseData.id
+
+  const [sectionRes, allSectionsRes, quizRes, progressRes, settingsRes] = await Promise.all([
     supabase
       .from('course_sections')
-      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index, key_takeaways, playground_code')
-      .eq('id', sectionId)
+      .select('id, slug, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index, key_takeaways, playground_code')
+      .eq('slug', sectionSlug)
       .eq('course_id', courseId)
       .single(),
     supabase
       .from('course_sections')
-      .select('id, title, order_index, end_time_seconds, start_time_seconds')
+      .select('id, slug, title, order_index, end_time_seconds, start_time_seconds')
       .eq('course_id', courseId)
       .order('order_index', { ascending: true }),
-    supabase
-      .from('quizzes')
-      .select('id, question_text, options_json, correct_answer_index')
-      .eq('section_id', sectionId)
-      .maybeSingle(),
+    null, // placeholder for later if section is found
     user
       ? supabase
           .from('user_progress')
@@ -63,27 +65,32 @@ export default async function SectionPage({ params }: SectionPageProps) {
       : Promise.resolve({ data: null }),
   ])
 
-  const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'transcript' | 'youtube_channel_name' | 'youtube_channel_url'> | null
-  const section = sectionRes.data as Pick<
+  const section = sectionRes.data as (Pick<
     CourseSectionRow,
     'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'text_summary' | 'order_index' | 'key_takeaways' | 'playground_code'
-  > | null
-  const allSections = (allSectionsRes.data ?? []) as Pick<
+  > & { slug: string }) | null
+
+  if (!section) notFound()
+
+  const sectionId = section.id
+
+  // Fetch quiz for this section specifically now that we have sectionId
+  const { data: quiz } = await (supabase
+      .from('quizzes')
+      .select('id, question_text, options_json, correct_answer_index')
+      .eq('section_id', sectionId)
+      .maybeSingle() as any) as { data: Pick<QuizRow, 'id' | 'question_text' | 'options_json' | 'correct_answer_index'> | null }
+
+  const course = courseData
+  const allSections = (allSectionsRes.data ?? []) as (Pick<
     CourseSectionRow,
     'id' | 'title' | 'order_index' | 'end_time_seconds' | 'start_time_seconds'
-  >[]
-  const quiz = quizRes.data as Pick<
-    QuizRow,
-    'id' | 'question_text' | 'options_json' | 'correct_answer_index'
-  > | null
+  > & { slug: string })[]
   const progress = (progressRes.data ?? []) as Pick<UserProgressRow, 'section_id' | 'is_completed'>[]
   const settings = settingsRes.data as { last_section_id: string; last_time_seconds: number } | null
 
-  if (!section || !course) notFound()
-
   // Use the saved time only if it's the SAME section
   const initialSavedTime = (settings?.last_section_id === sectionId) ? settings.last_time_seconds : null
-
 
   // Resolve transcript (could be URL or pre-parsed JSON)
   const transcript = await resolveTranscript(course.transcript)
@@ -105,7 +112,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
       style={{ backgroundColor: 'var(--nav-bg)' }}
     >
       <Link
-        href={`/${locale}/courses/${courseId}`}
+        href={`/${locale}/courses/${courseSlug}`}
         className="text-white/60 hover:text-white transition-colors flex items-center gap-1"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
@@ -126,7 +133,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
         return (
           <Link
             key={s.id}
-            href={`/${locale}/courses/${courseId}/sections/${s.id}`}
+            href={`/${locale}/courses/${courseSlug}/sections/${s.slug}`}
             data-current={isCurrent ? "true" : undefined}
             className={`flex items-start gap-3 px-4 py-3.5 transition-colors group ${
               isCurrent ? 'bg-primary/10' : 'hover:bg-muted/50'
@@ -167,7 +174,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const nextSectionAction = async () => {
     'use server'
     if (nextSection) {
-      redirect(`/${locale}/courses/${courseId}/sections/${nextSection.id}`)
+      redirect(`/${locale}/courses/${courseSlug}/sections/${nextSection.slug}`)
     }
   }
 
@@ -186,9 +193,11 @@ export default async function SectionPage({ params }: SectionPageProps) {
       startTimeSeconds={section.start_time_seconds}
       youtubeChannelName={course.youtube_channel_name}
       youtubeChannelUrl={course.youtube_channel_url}
-      nextSection={nextSection ? { id: nextSection.id, title: nextSection.title } : null}
+      nextSection={nextSection ? { id: nextSection.id, title: nextSection.title, slug: nextSection.slug } : null}
     >
       <SectionView
+        courseId={courseId}
+        courseSlug={courseSlug}
         sectionId={section.id}
         ytVideoId={section.yt_video_id}
         startTimeSeconds={section.start_time_seconds}
@@ -223,7 +232,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
             <p className="text-sm text-muted-foreground">Complete this final lesson to claim your certificate.</p>
           </div>
           <Link
-            href={`/${locale}/courses/${courseId}`}
+            href={`/${locale}/courses/${courseSlug}`}
             className="flex items-center gap-1.5 bg-amber-500 text-white text-sm font-bold px-6 py-3 rounded-lg hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
           >
             Finish Course

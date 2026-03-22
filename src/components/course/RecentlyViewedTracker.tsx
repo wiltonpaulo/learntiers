@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 interface RecentlyViewedTrackerProps {
   course: {
     id: string
+    slug: string
     title: string
     cover_image_url: string | null
     duration?: string
@@ -28,6 +29,7 @@ export default function RecentlyViewedTracker({ course }: RecentlyViewedTrackerP
       // Add to beginning
       items.unshift({
         id: course.id,
+        slug: course.slug,
         title: course.title,
         cover_image_url: course.cover_image_url,
         duration: course.duration || 'Free',
