@@ -35,8 +35,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const messages = await getMessages()
 
   return (
-    <html lang={locale} className={cn(inter.variable, signature.variable)}>
-      <body className="min-h-screen bg-background font-sans antialiased">
+    <html lang={locale} className={cn(inter.variable, signature.variable)} suppressHydrationWarning>
+      <body className="min-h-screen bg-background font-sans antialiased" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
