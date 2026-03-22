@@ -8,14 +8,25 @@ import { createClient } from '@/lib/supabase/server'
 export async function loginAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const next = (formData.get('next') as string) || '/courses'
+  const locale = formData.get('locale') as string || 'en'
+  let next = (formData.get('next') as string) || `/${locale}/courses`
+
+  // Ensure 'next' is a safe relative path
+  if (next.startsWith('http')) {
+    try {
+      const url = new URL(next)
+      next = url.pathname + url.search
+    } catch {
+      next = `/${locale}/courses`
+    }
+  }
 
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    const errorUrl = `/login?error=${encodeURIComponent(error.message)}${next ? `&next=${encodeURIComponent(next)}` : ''}`
+    const errorUrl = `/${locale}/login?error=${encodeURIComponent(error.message)}${next ? `&next=${encodeURIComponent(next)}` : ''}`
     redirect(errorUrl)
   }
 
