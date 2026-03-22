@@ -8,6 +8,7 @@ import { parseSubtitleFile } from '@/lib/subtitle-parser'
 import type { CourseRow, CourseSectionRow } from '@/types/database'
 import { s3Client, S3_BUCKET } from '@/lib/s3'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { generateSlug } from '@/lib/utils'
 
 // ─── Guard helper ─────────────────────────────────────────────────────────────
 
@@ -101,20 +102,24 @@ export async function createCourseAction(formData: FormData) {
     }
   }
 
+  const slug = generateSlug(courseData.title)
+
   const { data: course, error: courseError } = await db.from('courses').insert({
     title: courseData.title,
+    slug,
     description: courseData.description,
     cover_image_url: courseData.cover_image_url,
     transcript: null, // Insert null initially
     youtube_channel_name: youtubeChannelName,
     youtube_channel_url: youtubeChannelUrl,
-  } as never).select('id').single()
+  } as never).select('id, slug').single()
 
   if (courseError) {
     return redirect(`/admin/courses/new?error=${encodeURIComponent(courseError.message)}`)
   }
 
   const courseId = (course as { id: string }).id
+  const courseSlug = (course as { slug: string }).slug
 
   // If we had a transcript, upload it to S3 now that we have the courseId
   if (tempTranscript) {
@@ -131,9 +136,11 @@ export async function createCourseAction(formData: FormData) {
   if (sectionsToImport.length > 0) {
     for (let i = 0; i < sectionsToImport.length; i++) {
       const s = sectionsToImport[i]
+      const sectionSlug = generateSlug(s.title || `Lesson ${i + 1}`)
       const { data: section, error: sectionError } = await db.from('course_sections').insert({
         course_id: courseId,
         title: s.title || `Lesson ${i + 1}`,
+        slug: sectionSlug,
         yt_video_id: s.yt_video_id,
         start_time_seconds: parseInt(s.start_time_seconds || s.start || 0, 10),
         end_time_seconds: parseInt(s.end_time_seconds || s.end || 0, 10),
@@ -154,7 +161,7 @@ export async function createCourseAction(formData: FormData) {
     }
   }
 
-  redirect(`/admin/courses/${courseId}`)
+  redirect(`/admin/courses/${courseSlug}`)
 }
 
 export async function updateCourseAction(formData: FormData) {
@@ -162,8 +169,12 @@ export async function updateCourseAction(formData: FormData) {
   const courseId = formData.get('courseId') as string
   const db = createAdminClient()
 
+  const title = formData.get('title') as string
+  const slug = generateSlug(title)
+
   let updatePayload: any = {
-    title: formData.get('title') as string,
+    title,
+    slug,
     description: (formData.get('description') as string) || null,
     cover_image_url: (formData.get('cover_image_url') as string) || null,
   }
@@ -223,7 +234,7 @@ export async function updateCourseAction(formData: FormData) {
 
   if (error) redirect(`/admin/courses/${courseId}?error=${encodeURIComponent(error.message)}`)
 
-  redirect(`/admin/courses/${courseId}?success=Course+updated.`)
+  redirect(`/admin/courses/${slug}?success=Course+updated.`)
 }
 
 export async function deleteCourseAction(formData: FormData) {
@@ -243,17 +254,24 @@ export async function createSectionAction(formData: FormData) {
   const courseId = formData.get('courseId') as string
   const db = createAdminClient()
 
+  // We need the course slug for redirect
+  const { data: courseData } = await (db.from('courses').select('slug').eq('id', courseId).single() as any) as { data: { slug: string } | null }
+  const courseSlug = courseData?.slug || courseId
+
   // Auto-assign order_index = current count
   const { count } = await db
     .from('course_sections')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId)
 
+  const title = formData.get('title') as string
+  const slug = generateSlug(title)
   const yt_video_id = formData.get('yt_video_id') as string
 
   const { error } = await db.from('course_sections').insert({
     course_id: courseId,
-    title: formData.get('title') as string,
+    title,
+    slug,
     yt_video_id: yt_video_id,
     start_time_seconds: parseInt(formData.get('start_time_seconds') as string, 10),
     end_time_seconds: parseInt(formData.get('end_time_seconds') as string, 10),
@@ -273,9 +291,9 @@ export async function createSectionAction(formData: FormData) {
     }
   }
 
-  if (error) redirect(`/admin/courses/${courseId}/sections/new?error=${encodeURIComponent(error.message)}`)
+  if (error) redirect(`/admin/courses/${courseSlug}/sections/new?error=${encodeURIComponent(error.message)}`)
 
-  redirect(`/admin/courses/${courseId}?success=Section+added.`)
+  redirect(`/admin/courses/${courseSlug}?success=Section+added.`)
 }
 
 export async function updateSectionAction(formData: FormData) {
@@ -284,8 +302,16 @@ export async function updateSectionAction(formData: FormData) {
   const sectionId = formData.get('sectionId') as string
   const db = createAdminClient()
 
+  // We need the course slug for redirect
+  const { data: courseData } = await (db.from('courses').select('slug').eq('id', courseId).single() as any) as { data: { slug: string } | null }
+  const courseSlug = courseData?.slug || courseId
+
+  const title = formData.get('title') as string
+  const slug = generateSlug(title)
+
   let updatePayload: any = {
-    title: formData.get('title') as string,
+    title,
+    slug,
     yt_video_id: formData.get('yt_video_id') as string,
     start_time_seconds: parseInt(formData.get('start_time_seconds') as string, 10),
     end_time_seconds: parseInt(formData.get('end_time_seconds') as string, 10),
@@ -296,9 +322,9 @@ export async function updateSectionAction(formData: FormData) {
 
   const { error } = await db.from('course_sections').update(updatePayload as never).eq('id', sectionId)
 
-  if (error) redirect(`/admin/courses/${courseId}/sections/${sectionId}/edit?error=${encodeURIComponent(error.message)}`)
+  if (error) redirect(`/admin/courses/${courseSlug}/sections/${slug}/edit?error=${encodeURIComponent(error.message)}`)
 
-  redirect(`/admin/courses/${courseId}?success=Section+updated.`)
+  redirect(`/admin/courses/${courseSlug}?success=Section+updated.`)
 }
 
 export async function deleteSectionAction(formData: FormData) {
@@ -307,9 +333,13 @@ export async function deleteSectionAction(formData: FormData) {
   const sectionId = formData.get('sectionId') as string
   const db = createAdminClient()
 
+  // We need the course slug for redirect
+  const { data: courseData } = await (db.from('courses').select('slug').eq('id', courseId).single() as any) as { data: { slug: string } | null }
+  const courseSlug = courseData?.slug || courseId
+
   await db.from('course_sections').delete().eq('id', sectionId)
 
-  redirect(`/admin/courses/${courseId}?success=Section+deleted.`)
+  redirect(`/admin/courses/${courseSlug}?success=Section+deleted.`)
 }
 
 // ─── Quizzes ──────────────────────────────────────────────────────────────────
@@ -319,6 +349,14 @@ export async function upsertQuizAction(formData: FormData) {
   const courseId = formData.get('courseId') as string
   const sectionId = formData.get('sectionId') as string
   const db = createAdminClient()
+
+  // We need course and section slugs for redirect
+  const [{ data: courseData }, { data: sectionData }] = await Promise.all([
+    db.from('courses').select('slug').eq('id', courseId).single() as any,
+    db.from('course_sections').select('slug').eq('id', sectionId).single() as any
+  ])
+  const courseSlug = courseData?.slug || courseId
+  const sectionSlug = sectionData?.slug || sectionId
 
   const options = [
     formData.get('option_0') as string,
@@ -342,9 +380,9 @@ export async function upsertQuizAction(formData: FormData) {
     .from('quizzes')
     .upsert(payload, { onConflict: 'section_id' })
 
-  if (error) redirect(`/admin/courses/${courseId}/sections/${sectionId}/edit?error=${encodeURIComponent(error.message)}`)
+  if (error) redirect(`/admin/courses/${courseSlug}/sections/${sectionSlug}/edit?error=${encodeURIComponent(error.message)}`)
 
-  redirect(`/admin/courses/${courseId}/sections/${sectionId}/edit?success=Quiz+saved.`)
+  redirect(`/admin/courses/${courseSlug}/sections/${sectionSlug}/edit?success=Quiz+saved.`)
 }
 
 export async function deleteQuizAction(formData: FormData) {
@@ -353,7 +391,15 @@ export async function deleteQuizAction(formData: FormData) {
   const sectionId = formData.get('sectionId') as string
   const db = createAdminClient()
 
+  // We need course and section slugs for redirect
+  const [{ data: courseData }, { data: sectionData }] = await Promise.all([
+    db.from('courses').select('slug').eq('id', courseId).single() as any,
+    db.from('course_sections').select('slug').eq('id', sectionId).single() as any
+  ])
+  const courseSlug = courseData?.slug || courseId
+  const sectionSlug = sectionData?.slug || sectionId
+
   await db.from('quizzes').delete().eq('section_id', sectionId)
 
-  redirect(`/admin/courses/${courseId}/sections/${sectionId}/edit?success=Quiz+removed.`)
+  redirect(`/admin/courses/${courseSlug}/sections/${sectionSlug}/edit?success=Quiz+removed.`)
 }
