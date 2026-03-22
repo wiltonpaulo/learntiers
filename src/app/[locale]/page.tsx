@@ -114,7 +114,7 @@ export default async function HomePage() {
           {courses?.map((course) => (
             <Link 
               key={course.id} 
-              href={`/courses/${course.id}`}
+              href={`/courses/${course.slug}`}
               className="group border bg-card hover:shadow-xl transition-all duration-300 flex flex-col"
             >
               <div className="aspect-video bg-muted relative overflow-hidden">

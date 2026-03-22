@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { 
   Play, 
   Clock, 
@@ -32,6 +33,7 @@ const MOCK_USER = {
 const CONTINUE_WATCHING = [
   {
     id: '1',
+    slug: 'kubernetes-mastery-from-zero-to-pro',
     title: 'Kubernetes Mastery: From Zero to Pro',
     instructor: 'Alex Rivera',
     progress: 65,
@@ -41,6 +43,7 @@ const CONTINUE_WATCHING = [
   },
   {
     id: '2',
+    slug: 'advanced-go-patterns-concurrency',
     title: 'Advanced Go Patterns & Concurrency',
     instructor: 'Sarah Chen',
     progress: 32,
@@ -53,6 +56,7 @@ const CONTINUE_WATCHING = [
 const NEW_RELEASES = [
   {
     id: '3',
+    slug: 'rust-for-systems-engineering',
     title: 'Rust for Systems Engineering',
     instructor: 'Marcus Aurelius',
     level: 'Advanced',
@@ -61,6 +65,7 @@ const NEW_RELEASES = [
   },
   {
     id: '4',
+    slug: 'terraform-cloud-infrastructure',
     title: 'Terraform Cloud Infrastructure',
     instructor: 'Elena Rodriguez',
     level: 'Intermediate',
@@ -69,6 +74,7 @@ const NEW_RELEASES = [
   },
   {
     id: '5',
+    slug: 'aws-serverless-architecture',
     title: 'AWS Serverless Architecture',
     instructor: 'David Miller',
     level: 'Expert',
@@ -80,6 +86,7 @@ const NEW_RELEASES = [
 const RECOMMENDED = [
   {
     id: '6',
+    slug: 'docker-containers-in-production',
     title: 'Docker Containers in Production',
     instructor: 'Alex Rivera',
     rating: 4.9,
@@ -87,6 +94,7 @@ const RECOMMENDED = [
   },
   {
     id: '7',
+    slug: 'prometheus-grafana-monitoring',
     title: 'Prometheus & Grafana Monitoring',
     instructor: 'Sarah Chen',
     rating: 4.8,
@@ -94,6 +102,7 @@ const RECOMMENDED = [
   },
   {
     id: '8',
+    slug: 'ansible-automation-at-scale',
     title: 'Ansible Automation at Scale',
     instructor: 'Marcus Aurelius',
     rating: 4.7,
@@ -142,7 +151,7 @@ export default function DashboardPage() {
                 key={course.id}
                 className="group relative bg-[#141414] rounded-2xl border border-white/5 overflow-hidden hover:border-white/20 transition-all duration-300 shadow-2xl"
               >
-                <div className="flex flex-col sm:flex-row h-full">
+                <Link href={`/courses/${course.slug}`} className="flex flex-col sm:flex-row h-full">
                   {/* Thumbnail */}
                   <div className={cn("w-full sm:w-48 h-40 sm:h-auto relative shrink-0", course.thumbnail)}>
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/0 transition-colors">
@@ -181,7 +190,7 @@ export default function DashboardPage() {
                       </Button>
                     </div>
                   </div>
-                </div>
+                </Link>
               </div>
             ))}
           </div>
@@ -252,7 +261,7 @@ function StatItem({ icon, label, value }: { icon: React.ReactNode, label: string
 
 function CourseCard({ course }: { course: any }) {
   return (
-    <div className="min-w-[240px] sm:min-w-[280px] group cursor-pointer snap-start">
+    <Link href={`/courses/${course.slug}`} className="min-w-[240px] sm:min-w-[280px] group cursor-pointer snap-start">
       <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-3 shadow-lg">
         <div className={cn("absolute inset-0 transition-transform duration-500 group-hover:scale-110", course.thumbnail)} />
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
@@ -285,6 +294,6 @@ function CourseCard({ course }: { course: any }) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
