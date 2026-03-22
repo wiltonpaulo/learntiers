@@ -8,26 +8,31 @@ import { ChevronLeft } from 'lucide-react'
 import type { CourseRow } from '@/types/database'
 
 interface NewSectionPageProps {
-  params: Promise<{ courseId: string }>
+  params: Promise<{ courseSlug: string }>
   searchParams: Promise<{ error?: string }>
 }
 
 export default async function NewSectionPage({ params, searchParams }: NewSectionPageProps) {
-  const { courseId } = await params
+  const { courseSlug } = await params
   const { error } = await searchParams
   const locale = await getLocale()
   const db = createAdminClient()
 
-  const { data } = await db.from('courses').select('id, title').eq('id', courseId).single()
-  const course = data as Pick<CourseRow, 'id' | 'title'> | null
+  const { data: course } = await (db
+    .from('courses')
+    .select('id, slug, title')
+    .eq('slug', courseSlug)
+    .single() as any) as { data: Pick<CourseRow, 'id' | 'slug' | 'title'> | null }
 
   if (!course) notFound()
+
+  const courseId = course.id
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div>
         <Link
-          href={`/${locale}/admin/courses/${courseId}`}
+          href={`/${locale}/admin/courses/${courseSlug}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" /> {course.title}
@@ -49,7 +54,7 @@ export default async function NewSectionPage({ params, searchParams }: NewSectio
         courseId={courseId}
         action={createSectionAction}
         submitLabel="Add lesson"
-        cancelHref={`/${locale}/admin/courses/${courseId}`}
+        cancelHref={`/${locale}/admin/courses/${courseSlug}`}
       />
     </div>
   )

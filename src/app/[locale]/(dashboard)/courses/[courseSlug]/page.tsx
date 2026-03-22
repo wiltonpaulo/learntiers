@@ -11,12 +11,12 @@ import type { CourseRow, CourseSectionRow, UserProgressRow } from '@/types/datab
 
 interface CourseDetailPageProps {
   params: Promise<{
-    courseId: string
+    courseSlug: string
   }>
 }
 
 export default async function CourseDetailPage({ params }: CourseDetailPageProps) {
-  const { courseId } = await params
+  const { courseSlug } = await params
   const locale = await getLocale()
   const supabase = await createClient()
 
@@ -26,11 +26,23 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
 
   const loginMessage = encodeURIComponent('Log in or create a free account to start learning.')
 
-  const [courseRes, sectionsRes, progressRes, certificateRes, settingsRes] = await Promise.all([
-    supabase.from('courses').select('*').eq('id', courseId).single(),
+  // First fetch the course by slug to get its ID
+  const { data: course } = await (supabase
+    .from('courses')
+    .select('*')
+    .eq('slug', courseSlug)
+    .single() as any) as { data: CourseRow | null }
+
+  if (!course) {
+    notFound()
+  }
+
+  const courseId = course.id
+
+  const [sectionsRes, progressRes, certificateRes, settingsRes] = await Promise.all([
     supabase
       .from('course_sections')
-      .select('id, title, start_time_seconds, end_time_seconds')
+      .select('id, slug, title, start_time_seconds, end_time_seconds')
       .eq('course_id', courseId)
       .order('order_index'),
     user ? supabase.from('user_progress').select('section_id, is_completed').eq('user_id', user.id) : null,
@@ -38,8 +50,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
     user ? supabase.from('user_course_settings').select('*').eq('user_id', user.id).eq('course_id', courseId).maybeSingle() : null,
   ])
 
-  const course = courseRes.data as CourseRow | null
-  const sections = (sectionsRes.data ?? []) as Pick<CourseSectionRow, 'id' | 'title' | 'start_time_seconds' | 'end_time_seconds'>[]
+  const sections = (sectionsRes.data ?? []) as (Pick<CourseSectionRow, 'id' | 'title' | 'start_time_seconds' | 'end_time_seconds'> & { slug: string })[]
   const userProgress = (progressRes?.data ?? []) as Pick<UserProgressRow, 'section_id' | 'is_completed'>[]
   let certificate = certificateRes?.data as any | null
   const settings = settingsRes?.data as any | null
@@ -82,6 +93,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
       <RecentlyViewedTracker 
         course={{
           id: courseId,
+          slug: courseSlug,
           title: course.title,
           cover_image_url: course.cover_image_url,
           duration: totalDuration ? formatDuration(totalDuration) : 'Free'
@@ -101,7 +113,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
               </Link>
               {isAdmin && (
                 <Link
-                  href={`/${locale}/admin/courses/${courseId}`}
+                  href={`/${locale}/admin/courses/${courseSlug}`}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-bold hover:bg-amber-500/20 transition-colors"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -152,7 +164,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                 const done = completedSet.has(section.id)
                 const duration = section.end_time_seconds - section.start_time_seconds
                 
-                const sectionPath = `/${locale}/courses/${courseId}/sections/${section.id}`
+                const sectionPath = `/${locale}/courses/${courseSlug}/sections/${section.slug}`
                 const targetSectionUrl = isLoggedIn
                   ? sectionPath
                   : `/${locale}/login?message=${loginMessage}&next=${encodeURIComponent(sectionPath)}`
@@ -223,7 +235,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                   <div className="text-3xl font-extrabold">Free</div>
                   
                   {(() => {
-                    const ctaPath = `/${locale}/courses/${courseId}/sections/${ctaSection.id}`
+                    const ctaPath = `/${locale}/courses/${courseSlug}/sections/${ctaSection.slug}`
                     const ctaUrl = isLoggedIn ? ctaPath : `/${locale}/login?message=${loginMessage}&next=${encodeURIComponent(ctaPath)}`
                     
                     return (

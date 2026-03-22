@@ -103,7 +103,7 @@ export default async function CoursesPage({
           {courses?.map((course) => (
             <Link
               key={course.id}
-              href={`/courses/${course.id}`}
+              href={`/courses/${course.slug}`}
               className="group flex flex-col bg-card border hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
             >
               {/* Thumbnail */}

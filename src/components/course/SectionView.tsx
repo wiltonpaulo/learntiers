@@ -13,7 +13,6 @@ import { generateTakeawaysAction } from '@/lib/actions/ai'
 import { useSectionLayout } from './SectionLayoutClient'
 import { PlaygroundTab } from './PlaygroundTab'
 import { ResumePlaybackTracker } from './ResumePlaybackTracker'
-import { useParams } from 'next/navigation'
 import { TranscriptView } from './TranscriptView'
 import Link from 'next/link'
 
@@ -26,6 +25,8 @@ export interface TranscriptSegment {
 }
 
 interface SectionViewProps {
+  courseId: string
+  courseSlug: string
   sectionId: string
   ytVideoId: string
   startTimeSeconds: number
@@ -49,6 +50,8 @@ interface SectionViewProps {
  * SectionView — Client Component that owns the learning UX for a single section.
  */
 export function SectionView({
+  courseId,
+  courseSlug,
   sectionId,
   ytVideoId,
   startTimeSeconds,
@@ -71,10 +74,8 @@ export function SectionView({
   const [currentTime, setCurrentTime] = useState(startTimeSeconds)
   const [activeLineIndex, setActiveLineIndex] = useState(-1)
   const [isTheaterMode, setIsTheaterMode] = useState(false)
-  
+
   const { isCinemaMode, setPlayerApi, setCurrentTime: setGlobalCurrentTime, autoplay, setAutoplay } = useSectionLayout()
-  const params = useParams()
-  const courseId = params.courseId as string
 
   const [hasResumed, setHasResumed] = useState(false)
   const playerRef = useRef<SlicedYouTubePlayerRef>(null)
@@ -82,8 +83,9 @@ export function SectionView({
   // Handle Resume logic on first load
   useEffect(() => {
     if (hasResumed || !playerRef.current) return
-    
+
     const storageKey = `lt-resume-${courseId}`
+
     const savedData = localStorage.getItem(storageKey)
     
     let resumeTime = 0

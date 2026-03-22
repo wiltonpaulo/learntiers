@@ -11,31 +11,35 @@ import { ChevronLeft, Plus, Pencil, Trash2, GripVertical, Clock, ExternalLink } 
 import type { CourseSectionRow, CourseRow } from '@/types/database'
 
 interface CourseEditPageProps {
-  params: Promise<{ courseId: string }>
+  params: Promise<{ courseSlug: string }>
   searchParams: Promise<{ error?: string; success?: string }>
 }
 
 export default async function CourseEditPage({ params, searchParams }: CourseEditPageProps) {
-  const { courseId } = await params
+  const { courseSlug } = await params
   const { error, success } = await searchParams
   const locale = await getLocale()
   const db = createAdminClient()
 
-  const [courseRes, sectionsRes] = await Promise.all([
-    db.from('courses').select('id, title, description, cover_image_url').eq('id', courseId).single(),
-    db.from('course_sections')
-      .select('id, title, yt_video_id, start_time_seconds, end_time_seconds, order_index')
-      .eq('course_id', courseId)
-      .order('order_index', { ascending: true }),
-  ])
-
-  const course = courseRes.data as Pick<CourseRow, 'id' | 'title' | 'description' | 'cover_image_url'> | null
-  const sections = (sectionsRes.data ?? []) as Pick<
-    CourseSectionRow,
-    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'order_index'
-  >[]
+  const { data: course } = await (db
+    .from('courses')
+    .select('id, slug, title, description, cover_image_url')
+    .eq('slug', courseSlug)
+    .single() as any) as { data: Pick<CourseRow, 'id' | 'slug' | 'title' | 'description' | 'cover_image_url'> | null }
 
   if (!course) notFound()
+
+  const courseId = course.id
+
+  const { data: sectionsRes } = await db.from('course_sections')
+    .select('id, slug, title, yt_video_id, start_time_seconds, end_time_seconds, order_index')
+    .eq('course_id', courseId)
+    .order('order_index', { ascending: true })
+
+  const sections = (sectionsRes ?? []) as (Pick<
+    CourseSectionRow,
+    'id' | 'title' | 'yt_video_id' | 'start_time_seconds' | 'end_time_seconds' | 'order_index'
+  > & { slug: string })[]
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-8">
@@ -50,7 +54,7 @@ export default async function CourseEditPage({ params, searchParams }: CourseEdi
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold">Edit course</h1>
           <Link
-            href={`/${locale}/courses/${courseId}`}
+            href={`/${locale}/courses/${courseSlug}`}
             target="_blank"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
           >
@@ -137,7 +141,7 @@ export default async function CourseEditPage({ params, searchParams }: CourseEdi
             <p className="text-xs text-muted-foreground mt-0.5">{sections.length} lesson{sections.length !== 1 ? 's' : ''}</p>
           </div>
           <Link
-            href={`/${locale}/admin/courses/${courseId}/sections/new`}
+            href={`/${locale}/admin/courses/${courseSlug}/sections/new`}
             className="inline-flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -169,7 +173,7 @@ export default async function CourseEditPage({ params, searchParams }: CourseEdi
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <Link
-                      href={`/${locale}/admin/courses/${courseId}/sections/${section.id}/edit`}
+                      href={`/${locale}/admin/courses/${courseSlug}/sections/${section.slug}/edit`}
                       className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -193,7 +197,7 @@ export default async function CourseEditPage({ params, searchParams }: CourseEdi
           <div className="rounded-xl border bg-background flex flex-col items-center justify-center py-12 text-center">
             <p className="text-sm text-muted-foreground mb-3">No lessons yet. Add the first one.</p>
             <Link
-              href={`/${locale}/admin/courses/${courseId}/sections/new`}
+              href={`/${locale}/admin/courses/${courseSlug}/sections/new`}
               className="inline-flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />

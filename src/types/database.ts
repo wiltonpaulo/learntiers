@@ -23,6 +23,7 @@ export interface UserRow {
 
 export interface CourseRow {
   id: string
+  slug: string
   title: string
   description: string | null
   cover_image_url: string | null
@@ -34,6 +35,7 @@ export interface CourseRow {
 
 export interface CourseSectionRow {
   id: string
+  slug: string
   course_id: string
   title: string
   yt_video_id: string

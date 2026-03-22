@@ -67,7 +67,7 @@ interface SectionLayoutClientProps {
   startTimeSeconds: number
   youtubeChannelName?: string | null
   youtubeChannelUrl?: string | null
-  nextSection?: { id: string; title: string } | null
+  nextSection?: { id: string; title: string; slug: string } | null
 }
 
 export function SectionLayoutClient({
@@ -97,7 +97,7 @@ export function SectionLayoutClient({
   const [draftNoteContent, setDraftNoteContent] = useState('')
   const [draftCapturedTime, setDraftCapturedTime] = useState<number | null>(null)
   const [playerApi, setPlayerApi] = useState<{ getCurrentTime: () => number; seekTo: (seconds: number) => void } | null>(null)
-  const { courseId } = useParams()
+  const { courseSlug } = useParams()
 
   // ─── Persistence & Layout States ──────────────────────────────────────────
   const [leftWidth, setLeftWidth] = useState(320)
@@ -244,7 +244,7 @@ export function SectionLayoutClient({
             <div className="h-6 w-px bg-white/20 mx-1 shrink-0" />
             <div className="flex flex-col min-w-0">
               <Link 
-                href={`/courses/${courseId}`}
+                href={`/courses/${courseSlug}`}
                 className="flex items-center gap-1.5 text-base font-medium text-slate-300 hover:text-white transition-colors truncate"
               >
                 <ChevronLeft className="w-4 h-4 shrink-0" />
@@ -453,7 +453,7 @@ export function SectionLayoutClient({
             {nextSection && (
               <div className="absolute bottom-6 right-6 z-[40] animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <Link
-                  href={`/courses/${courseId}/sections/${nextSection.id}`}
+                  href={`/courses/${courseSlug}/sections/${nextSection.slug}`}
                   className="flex items-center gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-white/10 p-2 pl-4 rounded-full shadow-2xl hover:shadow-primary/20 hover:border-primary/30 transition-all group max-w-[280px]"
                 >
                   <div className="flex flex-col min-w-0">
