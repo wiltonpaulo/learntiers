@@ -25,7 +25,7 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    redirect(`/${locale}/?auth=login&next=${encodeURIComponent(`/${locale}/my-learning`)}`)
   }
 
   // 1. Fetch user data and progress
@@ -74,7 +74,7 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
     )
     
     const total = courseSections.length
-    const completed = completedInCourse.length
+    const completed = new Set(completedInCourse.map(p => p.section_id)).size
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
     const totalSeconds = courseSections.reduce((acc, s) => acc + (s.end_time_seconds - s.start_time_seconds), 0)
 

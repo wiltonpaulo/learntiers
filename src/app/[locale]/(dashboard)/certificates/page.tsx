@@ -12,7 +12,7 @@ export default async function CertificatesPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect(`/${locale}/login`)
+  if (!user) redirect(`/${locale}/?auth=login&next=${encodeURIComponent(`/${locale}/certificates`)}`)
 
   const [progressRes, certificatesRes, coursesRes] = await Promise.all([
     supabase
