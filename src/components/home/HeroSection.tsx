@@ -1,10 +1,21 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
 import { PlayCircle, Code2, ChevronRight, Sparkles, Youtube, Bot, FileText, Zap, Layout, Terminal } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/client"
 
 export function HeroSection() {
+  const [user, setUser] = React.useState<any>(null)
+  const supabase = createClient()
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+    })
+  }, [supabase])
+
   return (
     <section className="relative pt-20 pb-20 lg:pt-32 lg:pb-32 overflow-hidden bg-white">
       {/* Background Decorative Elements */}
@@ -33,8 +44,8 @@ export function HeroSection() {
 
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000">
               <Button size="lg" asChild className="h-14 px-8 text-lg font-bold rounded-2xl bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 group w-full sm:w-auto transition-all active:scale-95">
-                <Link href="/register">
-                  Start Learning Free
+                <Link href={user ? "/my-learning" : "/?auth=register"}>
+                  {user ? "Go to My Learning" : "Start Learning Free"}
                   <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
@@ -61,9 +72,9 @@ export function HeroSection() {
               {/* Header */}
               <div className="h-9 bg-slate-50 border-b border-slate-100 flex items-center px-4 gap-2 shrink-0">
                 <div className="flex gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-slate-300" />
-                  <div className="w-2 h-2 rounded-full bg-slate-300" />
-                  <div className="w-2 h-2 rounded-full bg-slate-300" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
                 </div>
                 <div className="mx-auto bg-white border border-slate-100 rounded-md px-3 py-0.5 text-[8px] text-slate-400 font-mono">
                   learntiers.com/mastering-kubernetes
@@ -73,7 +84,7 @@ export function HeroSection() {
               {/* Layout Content */}
               <div className="flex flex-1 overflow-hidden">
                 {/* Left: Curriculum Menu */}
-                <div className="w-1/5 border-r border-slate-100 bg-slate-50/30 p-2 flex flex-col gap-1.5 shrink-0 hidden sm:flex">
+                <div className="w-1/5 border-r border-slate-100 bg-slate-50/50 p-2 flex flex-col gap-1.5 shrink-0 hidden sm:flex">
                   <div className="flex items-center gap-1 mb-1 opacity-50">
                     <Layout className="w-2 h-2 text-primary" />
                     <span className="text-[7px] uppercase font-black text-slate-500">Menu</span>

@@ -4,7 +4,7 @@ import { TechStackLogos } from "@/components/home/TechStackLogos"
 import { FeatureZigZag } from "@/components/home/FeatureZigZag"
 import { ValuePropositionGrid } from "@/components/home/ValuePropositionGrid"
 import { PublicCourseCarousel } from "@/components/home/PublicCourseCarousel"
-import { PricingSection } from "@/components/home/PricingSection"
+import { CommunityCTASection } from "@/components/home/CommunityCTASection"
 import { FAQAccordion } from "@/components/home/FAQAccordion"
 
 /**
@@ -29,8 +29,8 @@ export default async function HomePage() {
       {/* ── Real Course Data Carousel ──────────────────────────────────── */}
       <PublicCourseCarousel />
 
-      {/* ── Pricing: Beta Status ────────────────────────────────────────── */}
-      <PricingSection />
+      {/* ── Community CTA: 100% Free ───────────────────────────────────── */}
+      <CommunityCTASection />
 
       {/* ── FAQ ────────────────────────────────────────────────────────── */}
       <FAQAccordion />
