@@ -11,12 +11,10 @@ export async function loginAction(formData: FormData) {
   const locale = formData.get('locale') as string || 'en'
   let next = (formData.get('next') as string) || `/${locale}/my-learning`
 
-  // If next is just the root or locale root, default to my-learning
   if (next === '/' || next === `/${locale}` || next === `/${locale}/`) {
     next = `/${locale}/my-learning`
   }
 
-  // Ensure 'next' is a safe relative path
   if (next.startsWith('http')) {
     try {
       const url = new URL(next)
@@ -26,12 +24,12 @@ export async function loginAction(formData: FormData) {
     }
   }
 
-  const supabase = await createClient()
-
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-  if (error) {
-    const errorUrl = `/${locale}/?auth=login&error=${encodeURIComponent(error.message)}${next ? `&next=${encodeURIComponent(next)}` : ''}`
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw new Error(error.message)
+  } catch (err: any) {
+    const errorUrl = `/${locale}/?auth=login&error=${encodeURIComponent(err.message || 'Login failed.')}${next ? `&next=${encodeURIComponent(next)}` : ''}`
     redirect(errorUrl)
   }
 
@@ -47,21 +45,20 @@ export async function signupAction(formData: FormData) {
   const locale = formData.get('locale') as string || 'en'
   const next = formData.get('next') as string
 
-  const supabase = await createClient()
-
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { name }, // passed to raw_user_meta_data — the trigger reads this
-    },
-  })
-
-  if (error) {
-    redirect(`/${locale}/?auth=register&error=${encodeURIComponent(error.message)}`)
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+      },
+    })
+    if (error) throw new Error(error.message)
+  } catch (err: any) {
+    redirect(`/${locale}/?auth=register&error=${encodeURIComponent(err.message || 'Signup failed.')}`)
   }
 
-  // After sign-up, redirect to login with message, preserving the next destination
   const loginUrl = `/${locale}/?auth=login&message=Check+your+email+to+confirm+your+account.${next ? `&next=${encodeURIComponent(next)}` : ''}`
   redirect(loginUrl)
 }
@@ -69,55 +66,65 @@ export async function signupAction(formData: FormData) {
 // ─── Update Profile ───────────────────────────────────────────────────────────
 
 export async function updateProfileAction(formData: FormData) {
-  const name = formData.get('name') as string
-  const phone = formData.get('phone') as string
-  const country = formData.get('country') as string
+  let locale = 'en'
+  try {
+    const name = formData.get('name') as string
+    const phone = formData.get('phone') as string
+    const country = formData.get('country') as string
+    locale = formData.get('locale') as string || 'en'
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) throw new Error('Not authenticated.')
+    if (!user) throw new Error('Not authenticated.')
 
-  const { error } = await (supabase.from('users') as any)
-    .update({ 
-      name, 
-      phone: phone || null, 
-      country: country || null 
+    const { error } = await (supabase.from('users') as any)
+      .update({ 
+        name, 
+        phone: phone || null, 
+        country: country || null 
+      })
+      .eq('id', user.id)
+
+    if (error) throw new Error(error.message)
+
+    await supabase.auth.updateUser({
+      data: { name }
     })
-    .eq('id', user.id)
-
-  if (error) {
-    redirect(`/settings?error=${encodeURIComponent(error.message)}`)
+  } catch (err: any) {
+    redirect(`/${locale}/settings?error=${encodeURIComponent(err.message || 'Update failed.')}`)
   }
 
-  // Also update metadata if possible (optional but good for consistency)
-  await supabase.auth.updateUser({
-    data: { name }
-  })
-
-  redirect('/settings?success=Profile+updated')
+  redirect(`/${locale}/settings?success=Profile+updated`)
 }
 
 export async function updatePasswordAction(formData: FormData) {
-  const password = formData.get('password') as string
+  let locale = 'en'
+  try {
+    const password = formData.get('password') as string
+    locale = formData.get('locale') as string || 'en'
 
-  const supabase = await createClient()
-  
-  const { error } = await supabase.auth.updateUser({
-    password: password
-  })
+    const supabase = await createClient()
+    const { error } = await supabase.auth.updateUser({
+      password: password
+    })
 
-  if (error) {
-    redirect(`/settings?error=${encodeURIComponent(error.message)}`)
+    if (error) throw new Error(error.message)
+  } catch (err: any) {
+    redirect(`/${locale}/settings?error=${encodeURIComponent(err.message || 'Password update failed.')}`)
   }
 
-  redirect('/settings?success=Password+updated')
+  redirect(`/${locale}/settings?success=Password+updated`)
 }
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 
 export async function logoutAction(formData: FormData) {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
+  try {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
+  } catch (err) {
+    // Sign out failed, but we still redirect to home
+  }
   redirect('/')
 }

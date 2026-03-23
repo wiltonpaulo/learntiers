@@ -13,12 +13,10 @@ interface VerifyPageProps {
 export default async function VerifyPage({ params }: VerifyPageProps) {
   const { code } = await params
   const locale = await getLocale()
-  const supabase = await createClient()
   const adminDb = createAdminClient()
 
   // 1. Fetch certificate with user and course details
   // Using admin client to ensure we always find it (RLS safe for public verification)
-  console.log('Verifying certificate with code:', code)
   const result = await adminDb
     .from('certificates')
     .select(`
@@ -29,8 +27,6 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
     .eq('verification_code', code)
     .single()
 
-  console.log('Full result from Supabase:', JSON.stringify(result, null, 2))
-  
   const { data: certificate, error } = result
 
   if (error) {
@@ -39,12 +35,10 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
   }
 
   if (!certificate) {
-    console.log('No certificate found for code:', code)
     notFound()
   }
 
   const typedCertificate = certificate as (CertificateRow & { users: UserRow, courses: CourseRow });
-  console.log('Certificate found:', typedCertificate.id)
 
   // 2. Fetch course sections to get aggregated key takeaways, duration and count
   const { data } = await adminDb
@@ -197,4 +191,4 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
       </div>
     </div>
   )
-  }
+}

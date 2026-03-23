@@ -47,7 +47,6 @@ function generateSlug(title) {
 }
 
 async function populateSlugs() {
-  console.log('Populating course slugs...')
   const { data: courses, error: coursesError } = await supabase.from('courses').select('id, title, slug')
   
   if (coursesError) {
@@ -58,12 +57,10 @@ async function populateSlugs() {
   for (const course of courses) {
     if (!course.slug) {
       const slug = generateSlug(course.title)
-      console.log(`Updating course ${course.id}: ${slug}`)
       await supabase.from('courses').update({ slug }).eq('id', course.id)
     }
   }
 
-  console.log('Populating section slugs...')
   const { data: sections, error: sectionsError } = await supabase.from('course_sections').select('id, title, slug')
   
   if (sectionsError) {
@@ -74,12 +71,9 @@ async function populateSlugs() {
   for (const section of sections) {
     if (!section.slug) {
       const slug = generateSlug(section.title)
-      console.log(`Updating section ${section.id}: ${slug}`)
       await supabase.from('course_sections').update({ slug }).eq('id', section.id)
     }
   }
-
-  console.log('Done!')
 }
 
 populateSlugs()

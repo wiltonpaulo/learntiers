@@ -45,20 +45,15 @@ async function uploadLogo() {
 
   const fileBuffer = await readFile(logoPath)
   
-  console.log('Uploading logo to Supabase Storage...')
-  
-  // 1. Ensure bucket exists and is public
   const { data: bucket, error: bucketError } = await supabase.storage.getBucket('learntiers-assets')
   
   if (bucketError) {
-    console.log('Creating bucket "learntiers-assets"...')
     await supabase.storage.createBucket('learntiers-assets', {
       public: true
     })
   }
 
-  // 2. Upload file
-  const { data, error } = await supabase.storage.from('learntiers-assets').upload('logo.png', fileBuffer, {
+  const { error } = await supabase.storage.from('learntiers-assets').upload('logo.png', fileBuffer, {
     contentType: 'image/png',
     upsert: true
   })
@@ -67,13 +62,6 @@ async function uploadLogo() {
     console.error('Error uploading logo:', error)
     return
   }
-
-  // 3. Get public URL
-  const { data: { publicUrl } } = supabase.storage.from('learntiers-assets').getPublicUrl('logo.png')
-
-  console.log('\n✅ Logo uploaded successfully!')
-  console.log('Public URL:', publicUrl)
-  console.log('\nYou can now use this URL in your email templates.')
 }
 
 uploadLogo()
