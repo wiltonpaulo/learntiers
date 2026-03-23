@@ -376,10 +376,11 @@ export function SectionLayoutClient({
             style={{ width: isSidebarOpen || isCinemaMode ? `${leftWidth}px` : 0 }}
           >
             {/* STICKY SIDEBAR HEADER */}
-            <div className="px-4 py-4 border-b shrink-0 flex flex-col gap-3 bg-muted/20 sticky top-0 z-10 backdrop-blur-md">
+            <div className="px-4 py-4 border-b shrink-0 flex flex-col gap-3 bg-white/80 sticky top-0 z-10 backdrop-blur-md">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col gap-1 min-w-0">
-                  <span className="text-[10px] font-bold text-primary/60 leading-none">Course</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Course Content</span>
+
                   <h2 className="text-sm font-bold text-foreground leading-tight line-clamp-2" title={courseTitle}>
                     {courseTitle}
                   </h2>

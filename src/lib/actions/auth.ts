@@ -9,7 +9,12 @@ export async function loginAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const locale = formData.get('locale') as string || 'en'
-  let next = (formData.get('next') as string) || `/${locale}/courses`
+  let next = (formData.get('next') as string) || `/${locale}/my-learning`
+
+  // If next is just the root or locale root, default to my-learning
+  if (next === '/' || next === `/${locale}` || next === `/${locale}/`) {
+    next = `/${locale}/my-learning`
+  }
 
   // Ensure 'next' is a safe relative path
   if (next.startsWith('http')) {
@@ -17,7 +22,7 @@ export async function loginAction(formData: FormData) {
       const url = new URL(next)
       next = url.pathname + url.search
     } catch {
-      next = `/${locale}/courses`
+      next = `/${locale}/my-learning`
     }
   }
 
@@ -26,19 +31,21 @@ export async function loginAction(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    const errorUrl = `/${locale}/login?error=${encodeURIComponent(error.message)}${next ? `&next=${encodeURIComponent(next)}` : ''}`
+    const errorUrl = `/${locale}/?auth=login&error=${encodeURIComponent(error.message)}${next ? `&next=${encodeURIComponent(next)}` : ''}`
     redirect(errorUrl)
   }
 
   redirect(next)
 }
 
-// ─── Register ─────────────────────────────────────────────────────────────────
+// ─── Signup ───────────────────────────────────────────────────────────────────
 
-export async function registerAction(formData: FormData) {
+export async function signupAction(formData: FormData) {
   const name = formData.get('name') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const locale = formData.get('locale') as string || 'en'
+  const next = formData.get('next') as string
 
   const supabase = await createClient()
 
@@ -51,11 +58,12 @@ export async function registerAction(formData: FormData) {
   })
 
   if (error) {
-    redirect(`/register?error=${encodeURIComponent(error.message)}`)
+    redirect(`/${locale}/?auth=register&error=${encodeURIComponent(error.message)}`)
   }
 
-  // After sign-up, redirect to login (or courses if email confirmation is disabled)
-  redirect('/login?message=Check+your+email+to+confirm+your+account.')
+  // After sign-up, redirect to login with message, preserving the next destination
+  const loginUrl = `/${locale}/?auth=login&message=Check+your+email+to+confirm+your+account.${next ? `&next=${encodeURIComponent(next)}` : ''}`
+  redirect(loginUrl)
 }
 
 // ─── Update Profile ───────────────────────────────────────────────────────────
@@ -111,5 +119,5 @@ export async function updatePasswordAction(formData: FormData) {
 export async function logoutAction(formData: FormData) {
   const supabase = await createClient()
   await supabase.auth.signOut()
-  redirect('/login')
+  redirect('/')
 }

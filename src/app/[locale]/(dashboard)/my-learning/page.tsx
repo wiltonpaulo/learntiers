@@ -25,7 +25,7 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    redirect(`/${locale}/?auth=login&next=${encodeURIComponent(`/${locale}/my-learning`)}`)
   }
 
   // 1. Fetch user data and progress

@@ -4,10 +4,15 @@ import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { SectionView, TranscriptSegment } from '@/components/course/SectionView'
 import { SectionLayoutClient } from '@/components/course/SectionLayoutClient'
-import { TakeawaysSidebar } from '@/components/course/TakeawaysSidebar'
-import { CheckCircle2, Circle, ChevronLeft, PlayCircle, Clock } from 'lucide-react'
-import type { CourseSectionRow, QuizRow, UserProgressRow, CourseRow } from '@/types/database'
+import type { CourseRow, CourseSectionRow, QuizRow, UserProgressRow } from '@/types/database'
 import { resolveTranscript } from '@/lib/transcript'
+import { 
+  ChevronLeft, 
+  PlayCircle, 
+  CheckCircle2, 
+  Circle, 
+  Clock 
+} from 'lucide-react'
 
 interface SectionPageProps {
   params: Promise<{ courseSlug: string; sectionSlug: string }>
@@ -22,7 +27,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   if (!user) {
     const currentPath = `/${locale}/courses/${courseSlug}/sections/${sectionSlug}`
     const loginMessage = encodeURIComponent('Please log in or create an account to view this lesson.')
-    redirect(`/${locale}/login?message=${loginMessage}&next=${encodeURIComponent(currentPath)}`)
+    redirect(`/?auth=login&message=${loginMessage}&next=${encodeURIComponent(currentPath)}`)
   }
 
   // First fetch the course by slug to get its ID
@@ -36,7 +41,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
 
   const courseId = courseData.id
 
-  const [sectionRes, allSectionsRes, quizRes, progressRes, settingsRes] = await Promise.all([
+  const [sectionRes, allSectionsRes, progressRes, settingsRes] = await Promise.all([
     supabase
       .from('course_sections')
       .select('id, slug, title, yt_video_id, start_time_seconds, end_time_seconds, text_summary, order_index, key_takeaways, playground_code')
@@ -48,7 +53,6 @@ export default async function SectionPage({ params }: SectionPageProps) {
       .select('id, slug, title, order_index, end_time_seconds, start_time_seconds')
       .eq('course_id', courseId)
       .order('order_index', { ascending: true }),
-    null, // placeholder for later if section is found
     user
       ? supabase
           .from('user_progress')
@@ -108,8 +112,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
 
   const header = (
     <div
-      className="px-6 py-3 border-b text-sm flex items-center gap-2"
-      style={{ backgroundColor: 'var(--nav-bg)' }}
+      className="px-6 py-3 border-b text-sm flex items-center gap-2 bg-[#1c1d1f]"
     >
       <Link
         href={`/${locale}/courses/${courseSlug}`}
@@ -124,7 +127,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   )
 
   const sidebar = (
-    <div className="divide-y">
+    <div className="divide-y divide-slate-100">
       {allSections.map((s) => {
         const done = completedSet.has(s.id)
         const isCurrent = s.id === sectionId
@@ -136,17 +139,17 @@ export default async function SectionPage({ params }: SectionPageProps) {
             href={`/${locale}/courses/${courseSlug}/sections/${s.slug}`}
             data-current={isCurrent ? "true" : undefined}
             className={`flex items-start gap-3 px-4 py-3.5 transition-colors group ${
-              isCurrent ? 'bg-primary/10' : 'hover:bg-muted/50'
+              isCurrent ? 'bg-purple-50' : 'bg-white hover:bg-slate-50'
             }`}
           >
             {/* Icon */}
             <div className="mt-0.5 shrink-0">
               {done ? (
-                <CheckCircle2 className="w-4 h-4 text-primary" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               ) : isCurrent ? (
-                <PlayCircle className="w-4 h-4 text-primary" />
+                <PlayCircle className="w-4 h-4 text-purple-600" />
               ) : (
-                <Circle className="w-4 h-4 text-muted-foreground/40 group-hover:text-foreground" />
+                <Circle className="w-4 h-4 text-slate-300 group-hover:text-slate-400" />
               )}
             </div>
 
@@ -154,12 +157,12 @@ export default async function SectionPage({ params }: SectionPageProps) {
             <div className="flex-1 min-w-0">
               <p
                 className={`text-sm truncate ${
-                  isCurrent ? 'font-semibold text-primary' : 'group-hover:text-foreground'
+                  isCurrent ? 'font-bold text-purple-600' : 'text-slate-700 group-hover:text-slate-900 font-medium'
                 }`}
               >
                 {s.title}
               </p>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+              <div className={`flex items-center gap-1.5 text-[10px] font-bold mt-1 tracking-wider ${isCurrent ? 'text-purple-600/70' : 'text-slate-500'}`}>
                 <Clock className="w-3 h-3" />
                 <span>{Math.round(duration / 60)} min</span>
               </div>
@@ -223,19 +226,19 @@ export default async function SectionPage({ params }: SectionPageProps) {
 
       {/* Simple end of section indicator */}
       {!nextSection && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 flex flex-col items-center text-center gap-4 mt-8">
+        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-8 flex flex-col items-center text-center gap-4 mt-8 shadow-xl shadow-purple-100/50">
           <div className="space-y-1">
-            <p className="text-amber-600 dark:text-amber-500 font-bold flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-5 h-5" />
+            <p className="text-purple-600 font-black text-lg flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-6 h-6" />
               You've reached the end!
             </p>
-            <p className="text-sm text-muted-foreground">Complete this final lesson to claim your certificate.</p>
+            <p className="text-sm text-slate-500 font-medium max-w-xs">Complete this final lesson to claim your verified certificate.</p>
           </div>
           <Link
             href={`/${locale}/courses/${courseSlug}`}
-            className="flex items-center gap-1.5 bg-amber-500 text-white text-sm font-bold px-6 py-3 rounded-lg hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
+            className="flex items-center gap-2 bg-purple-600 text-white text-sm font-black px-8 py-3.5 rounded-xl hover:bg-purple-700 transition-all shadow-xl shadow-purple-200 active:scale-95"
           >
-            Finish Course
+            FINISH COURSE
           </Link>
         </div>
       )}

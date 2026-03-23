@@ -98,14 +98,14 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
             ) : (
               <div className="flex items-center gap-2">
                 <Link
-                  href="/login"
+                  href="/?auth=login"
                   className="text-sm font-bold text-white/80 hover:text-white transition-colors px-3 py-1.5 rounded-md hover:bg-white/10 flex items-center gap-1.5"
                 >
                   <LogIn className="w-4 h-4" />
                   Log in
                 </Link>
                 <Link
-                  href="/register"
+                  href="/?auth=register"
                   className="text-sm font-bold bg-white text-slate-900 px-4 py-1.5 rounded-md hover:bg-white/90 transition-colors"
                 >
                   Sign up

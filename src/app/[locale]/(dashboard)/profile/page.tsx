@@ -11,7 +11,7 @@ export default async function ProfilePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect(`/${locale}/login`)
+  if (!user) redirect(`/${locale}/?auth=login&next=${encodeURIComponent(`/${locale}/profile`)}`)
 
   const [profileRes, progressRes] = await Promise.all([
     supabase

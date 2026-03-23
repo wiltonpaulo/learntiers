@@ -19,7 +19,7 @@ export default async function SettingsPage({
   const { data: { user } } = await supabase.auth.getUser()
   const { success, error } = await searchParams
 
-  if (!user) redirect(`/${locale}/login`)
+  if (!user) redirect(`/${locale}/?auth=login&next=${encodeURIComponent(`/${locale}/settings`)}`)
 
   const { data: profile } = await supabase
     .from('users')
