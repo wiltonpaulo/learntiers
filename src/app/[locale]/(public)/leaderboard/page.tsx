@@ -40,7 +40,7 @@ export default async function LeaderboardPage() {
             <Trophy className="w-8 h-8 text-yellow-400" />
           </div>
           <h1 className="text-4xl font-black text-white mb-4 tracking-tight">Global Ranking</h1>
-          <p className="text-slate-400 text-lg">Os melhores talentos da engenharia medindo forças em tempo real.</p>
+          <p className="text-slate-400 text-lg">Top engineering talents competing in real-time.</p>
         </div>
       </div>
 
@@ -89,8 +89,8 @@ export default async function LeaderboardPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 w-20">Rank</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Engenheiro</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 hidden sm:table-cell">País</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Engineer</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 hidden sm:table-cell">Country</th>
                   <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-500">Score</th>
                 </tr>
               </thead>
@@ -123,7 +123,7 @@ export default async function LeaderboardPage() {
                             <span className="font-bold text-slate-900">
                               {u.name}
                               {isCurrentUser && (
-                                <span className="ml-2 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase font-black">Você</span>
+                                <span className="ml-2 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase font-black">You</span>
                               )}
                             </span>
                           </div>
@@ -146,7 +146,7 @@ export default async function LeaderboardPage() {
         ) : (
           <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200 shadow-sm">
             <Trophy className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-            <p className="text-slate-400 font-medium">Nenhum score registrado ainda. Seja o primeiro!</p>
+            <p className="text-slate-400 font-medium">No scores recorded yet. Be the first!</p>
           </div>
         )}
 
@@ -154,16 +154,16 @@ export default async function LeaderboardPage() {
           <div className="rounded-[2.5rem] bg-slate-900 p-12 text-center space-y-6 relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -mr-32 -mt-32" />
             <div className="relative z-10 space-y-4">
-              <h3 className="text-3xl font-black text-white tracking-tight">Quer aparecer no ranking?</h3>
+              <h3 className="text-3xl font-black text-white tracking-tight">Want to join the ranking?</h3>
               <p className="text-slate-400 text-lg max-w-md mx-auto leading-relaxed">
-                Crie sua conta gratuita agora e comece a ganhar pontos completando lições e acertando quizzes.
+                Create your free account now and start earning points by completing lessons and passing quizzes.
               </p>
               <div className="pt-4">
                 <Link 
                   href="/?auth=register"
                   className="inline-flex h-14 items-center justify-center rounded-2xl bg-primary px-10 text-lg font-bold text-white shadow-2xl shadow-primary/30 hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
                 >
-                  Criar minha conta agora
+                  Create my account now
                 </Link>
               </div>
             </div>

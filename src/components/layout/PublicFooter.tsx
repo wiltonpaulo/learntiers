@@ -34,7 +34,6 @@ export function PublicFooter() {
             <ul className="space-y-2 text-sm">
               <li><Link href="/courses" className="hover:text-purple-600 transition-colors">All Courses</Link></li>
               <li><Link href="/courses?q=career" className="hover:text-purple-600 transition-colors">Career Tracks</Link></li>
-              <li><Link href="/pricing" className="hover:text-purple-600 transition-colors">Pricing</Link></li>
               <li><Link href="/leaderboard" className="hover:text-purple-600 transition-colors">Global Ranking</Link></li>
             </ul>
           </div>

@@ -62,7 +62,13 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
   let certificate = certificateRes?.data as any | null
   const settings = settingsRes?.data as any | null
 
-  const completedSet = new Set(userProgress.filter((p) => p.is_completed).map((p) => p.section_id))
+  // Filter progress to only include sections from THIS course
+  const courseSectionIds = new Set(sections.map(s => s.id))
+  const completedSet = new Set(
+    userProgress
+      .filter((p) => p.is_completed && courseSectionIds.has(p.section_id))
+      .map((p) => p.section_id)
+  )
   const completedCount = completedSet.size
   const totalDuration = sections.reduce((acc, s) => acc + (s.end_time_seconds - s.start_time_seconds), 0)
 
