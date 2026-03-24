@@ -18,7 +18,7 @@ export default async function AdminOverviewPage() {
     db.from('course_sections').select('*', { count: 'exact', head: true }),
     db.from('users').select('*', { count: 'exact', head: true }),
     db.from('quizzes').select('*', { count: 'exact', head: true }),
-    db.from('courses').select('id, title, created_at').order('created_at', { ascending: false }).limit(5),
+    db.from('courses').select('id, slug, title, created_at').order('created_at', { ascending: false }).limit(5),
   ])
 
   const stats = [
@@ -74,10 +74,10 @@ export default async function AdminOverviewPage() {
         <div>
           <h2 className="text-sm font-semibold mb-3">Recent courses</h2>
           <div className="rounded-xl border overflow-hidden divide-y bg-background">
-            {recentCourses.map((c: { id: string; title: string; created_at: string }) => (
+            {recentCourses.map((c: any) => (
               <Link
                 key={c.id}
-                href={`/${locale}/admin/courses/${c.id}`}
+                href={`/${locale}/admin/courses/${c.slug}`}
                 className="flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors group"
               >
                 <span className="text-sm font-medium">{c.title}</span>

@@ -28,8 +28,8 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
     redirect(`/${locale}/?auth=login&next=${encodeURIComponent(`/${locale}/my-learning`)}`)
   }
 
-  // 1. Fetch user data and progress
-  const [userRes, progressRes, allCoursesRes] = await Promise.all([
+  // 1. Fetch user data, progress and settings
+  const [userRes, progressRes, allCoursesRes, settingsRes] = await Promise.all([
     supabase.from('users').select('*').eq('id', user.id).single(),
     supabase.from('user_progress').select(`
       section_id,
@@ -38,22 +38,25 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
         course_id
       )
     `).eq('user_id', user.id),
-    supabase.from('courses').select('*').order('created_at', { ascending: false })
+    supabase.from('courses').select('*').order('created_at', { ascending: false }),
+    supabase.from('user_course_settings').select('*').eq('user_id', user.id)
   ])
 
   const userData = userRes.data as unknown as UserRow
   const progressEntries = (progressRes.data || []) as any[]
   const allCourses = (allCoursesRes.data || []) as CourseRow[]
+  const userSettings = (settingsRes.data || []) as any[]
   
   const enrolledCourseIds = Array.from(new Set(progressEntries.map((p) => p.course_sections?.course_id).filter(Boolean)))
 
-  // 2. Fetch ALL sections
+  // 2. Fetch ALL sections with slugs and order_index
   const { data: allSectionsData } = await supabase
     .from('course_sections')
-    .select('id, course_id, start_time_seconds, end_time_seconds, created_at')
+    .select('id, slug, course_id, start_time_seconds, end_time_seconds, order_index, created_at')
     .in('course_id', allCourses.map(c => c.id))
+    .order('order_index', { ascending: true })
 
-  const allSections = (allSectionsData || []) as Pick<CourseSectionRow, 'id' | 'course_id' | 'start_time_seconds' | 'end_time_seconds' | 'created_at'>[]
+  const allSections = (allSectionsData || []) as (Pick<CourseSectionRow, 'id' | 'slug' | 'course_id' | 'start_time_seconds' | 'end_time_seconds' | 'order_index' | 'created_at'>)[]
 
   // 3. Process courses and calculate stats
   let totalStudySeconds = 0
@@ -78,9 +81,15 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
     const totalSeconds = courseSections.reduce((acc, s) => acc + (s.end_time_seconds - s.start_time_seconds), 0)
 
+    // Find the best section to start/resume
+    const settings = userSettings.find(s => s.course_id === course.id)
+    const lastSection = settings?.last_section_id ? courseSections.find(s => s.id === settings.last_section_id) : null
+    const entrySection = lastSection || courseSections[0]
+
     return {
       id: course.id,
       slug: course.slug,
+      entrySectionSlug: entrySection?.slug || null,
       title: course.title,
       author: course.youtube_channel_name || 'Expert',
       duration: formatDuration(totalSeconds),

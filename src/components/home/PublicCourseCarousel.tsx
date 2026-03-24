@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
-import { ChevronRight, GraduationCap, Star, Clock, BookOpen } from "lucide-react"
+import { ChevronRight, GraduationCap, Clock, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { Badge } from "@/components/ui/badge"
@@ -13,18 +13,46 @@ export function PublicCourseCarousel() {
   const supabase = createClient()
 
   useEffect(() => {
-    async function fetchCourses() {
-      const { data } = await supabase
+    async function fetchData() {
+      // 1. Fetch courses
+      const { data: coursesData } = await supabase
         .from('courses')
         .select('id, slug, title, description, cover_image_url, created_at')
         .order('created_at', { ascending: false })
         .limit(6)
       
-      setCourses(data || [])
+      if (!coursesData) {
+        setCourses([])
+        setLoading(false)
+        return
+      }
+
+      // 2. Fetch sections for these courses to calculate stats
+      const courseIds = (coursesData as any[]).map(c => c.id)
+      const { data: sectionsData } = await (supabase
+        .from('course_sections')
+        .select('course_id, start_time_seconds, end_time_seconds')
+        .in('course_id', courseIds) as any) as { data: { course_id: string; start_time_seconds: number; end_time_seconds: number }[] | null }
+
+      const statsMap: Record<string, { count: number; duration: number }> = {}
+      sectionsData?.forEach((s) => {
+        if (!statsMap[s.course_id]) {
+          statsMap[s.course_id] = { count: 0, duration: 0 }
+        }
+        statsMap[s.course_id].count += 1
+        statsMap[s.course_id].duration += (s.end_time_seconds - s.start_time_seconds)
+      })
+
+      const enrichedCourses = (coursesData as any[]).map(c => ({
+        ...c,
+        stats: statsMap[c.id] || { count: 0, duration: 0 }
+      }))
+
+      setCourses(enrichedCourses)
       setLoading(false)
     }
-    fetchCourses()
-  }, [])
+    fetchData()
+  }, [supabase])
 
   if (loading) {
     return (
@@ -94,7 +122,10 @@ export function PublicCourseCarousel() {
               {/* Content */}
               <div className="p-6 space-y-4">
                 <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  <span className="flex items-center gap-1.5"><Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> 4.9</span>
+                  <span className="flex items-center gap-1.5 text-slate-500">
+                    <Clock className="w-3.5 h-3.5" /> 
+                    {formatDuration(course.stats.duration)}
+                  </span>
                   <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> High-quality</span>
                 </div>
                 
@@ -109,7 +140,7 @@ export function PublicCourseCarousel() {
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
                     <BookOpen className="w-4 h-4 text-purple-600" />
-                    Interactive
+                    {course.stats.count} lessons
                   </div>
                   <span className="text-purple-600 font-black text-sm uppercase tracking-tighter group-hover:underline">
                     View details
@@ -127,4 +158,12 @@ export function PublicCourseCarousel() {
       `}</style>
     </section>
   )
+}
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  
+  if (h > 0) return `${h}h ${m}m`
+  return `${m}m`
 }

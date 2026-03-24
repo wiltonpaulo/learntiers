@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Link } from '@/i18n/routing'
 import { getLocale } from 'next-intl/server'
-import { GraduationCap, Search, Filter, Star, BookOpen, Clock } from 'lucide-react'
+import { GraduationCap, Search, Filter, BookOpen, Clock } from 'lucide-react'
 import type { CourseRow } from '@/types/database'
 
 export default async function CoursesPage({ 
@@ -23,14 +23,18 @@ export default async function CoursesPage({
 
   const { data: courses } = await query as { data: CourseRow[] | null }
 
-  // Count sections per course for the cards
-  const { data: sectionCounts } = await supabase
+  // Fetch all sections to calculate counts and durations
+  const { data: sectionsData } = await (supabase
     .from('course_sections')
-    .select('course_id')
+    .select('course_id, start_time_seconds, end_time_seconds') as any) as { data: { course_id: string; start_time_seconds: number; end_time_seconds: number }[] | null }
 
-  const countMap: Record<string, number> = {}
-  sectionCounts?.forEach((s: { course_id: string }) => {
-    countMap[s.course_id] = (countMap[s.course_id] ?? 0) + 1
+  const statsMap: Record<string, { count: number; duration: number }> = {}
+  sectionsData?.forEach((s) => {
+    if (!statsMap[s.course_id]) {
+      statsMap[s.course_id] = { count: 0, duration: 0 }
+    }
+    statsMap[s.course_id].count += 1
+    statsMap[s.course_id].duration += (s.end_time_seconds - s.start_time_seconds)
   })
 
   return (
@@ -77,57 +81,62 @@ export default async function CoursesPage({
       {/* ── Course Grid ──────────────────────────────────────────────────── */}
       <div className="container mx-auto max-w-6xl px-4 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {courses?.map((course) => (
-            <Link
-              key={course.id}
-              href={`/courses/${course.slug}`}
-              className="group flex flex-col bg-white border border-slate-200 rounded-3xl overflow-hidden hover:border-purple-200 hover:shadow-2xl hover:shadow-purple-100/50 transition-all duration-500"
-            >
-              {/* Thumbnail */}
-              <div className="aspect-video bg-slate-100 relative overflow-hidden">
-                {course.cover_image_url ? (
-                  <img
-                    src={course.cover_image_url}
-                    alt={course.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <GraduationCap className="w-10 h-10 text-slate-300" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-60" />
-              </div>
-
-              {/* Content */}
-              <div className="p-5 flex flex-col flex-1 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    < Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-bold text-slate-400">4.9</span>
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    {countMap[course.id] ?? 0} lessons
-                  </span>
+          {courses?.map((course) => {
+            const stats = statsMap[course.id] || { count: 0, duration: 0 }
+            return (
+              <Link
+                key={course.id}
+                href={`/courses/${course.slug}`}
+                className="group flex flex-col bg-white border border-slate-200 rounded-3xl overflow-hidden hover:border-purple-200 hover:shadow-2xl hover:shadow-purple-100/50 transition-all duration-500"
+              >
+                {/* Thumbnail */}
+                <div className="aspect-video bg-slate-100 relative overflow-hidden">
+                  {course.cover_image_url ? (
+                    <img
+                      src={course.cover_image_url}
+                      alt={course.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <GraduationCap className="w-10 h-10 text-slate-300" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-60" />
                 </div>
 
-                <h3 className="font-bold text-lg text-slate-900 line-clamp-2 group-hover:text-purple-600 transition-colors leading-tight">
-                  {course.title}
-                </h3>
-                
-                <p className="text-sm text-slate-500 line-clamp-2 flex-1 leading-relaxed">
-                  {course.description}
-                </p>
+                {/* Content */}
+                <div className="p-5 flex flex-col flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-slate-500">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-tight">
+                        {formatDuration(stats.duration)}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      {stats.count} lessons
+                    </span>
+                  </div>
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
-                  <div className="text-lg font-black text-slate-900">Free</div>
-                  <div className="text-purple-600 font-bold text-xs uppercase tracking-tighter flex items-center gap-1 group-hover:underline">
-                    View Course
+                  <h3 className="font-bold text-lg text-slate-900 line-clamp-2 group-hover:text-purple-600 transition-colors leading-tight">
+                    {course.title}
+                  </h3>
+                  
+                  <p className="text-sm text-slate-500 line-clamp-2 flex-1 leading-relaxed">
+                    {course.description}
+                  </p>
+
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
+                    <div className="text-lg font-black text-slate-900">Free</div>
+                    <div className="text-purple-600 font-bold text-xs uppercase tracking-tighter flex items-center gap-1 group-hover:underline">
+                      View Course
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
 
         {(!courses || courses.length === 0) && (
@@ -140,4 +149,12 @@ export default async function CoursesPage({
       </div>
     </div>
   )
+}
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  
+  if (h > 0) return `${h}h ${m}m`
+  return `${m}m`
 }

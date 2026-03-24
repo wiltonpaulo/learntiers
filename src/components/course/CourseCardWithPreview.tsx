@@ -19,6 +19,7 @@ interface CoursePreviewProps {
   course: {
     id: string
     slug: string
+    entrySectionSlug?: string | null
     title: string
     author: string
     duration: string
@@ -89,23 +90,35 @@ export function CourseCardWithPreview({ course, children, buttonLabel = 'resume'
             }}
           >
             {/* Video Thumbnail Area */}
-            <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
+            <Link 
+              href={course.entrySectionSlug 
+                ? `/courses/${course.slug}/sections/${course.entrySectionSlug}` 
+                : `/courses/${course.slug}`}
+              className="relative aspect-video w-full bg-slate-900 overflow-hidden block group/thumb"
+            >
               {course.cover_image_url ? (
-                <img src={course.cover_image_url} alt="" className="w-full h-full object-cover" />
+                <img src={course.cover_image_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover/thumb:scale-110" />
               ) : (
                 <div className={cn("absolute inset-0 opacity-40", course.thumbnailColor)} />
               )}
               
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                 <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-2xl">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/thumb:bg-black/0 transition-colors">
+                 <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-2xl transition-transform group-hover/thumb:scale-110">
                     <Play className="w-5 h-5 text-white fill-current ml-0.5" />
                  </div>
               </div>
 
-              <button onClick={() => setIsOpen(false)} className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white/70 hover:text-white transition-colors">
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsOpen(false);
+                }} 
+                className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              >
                 <X className="w-3.5 h-3.5" />
               </button>
-            </div>
+            </Link>
 
             {/* Real Metadata */}
             <div className="p-4 space-y-3">
@@ -142,7 +155,9 @@ export function CourseCardWithPreview({ course, children, buttonLabel = 'resume'
               <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary transition-colors">
                 <Bookmark className="w-3.5 h-3.5" />
               </Button>
-              <Link href={`/courses/${course.slug}`}>
+              <Link href={course.entrySectionSlug 
+                ? `/courses/${course.slug}/sections/${course.entrySectionSlug}` 
+                : `/courses/${course.slug}`}>
                 <Button size="sm" className="h-7 px-3 text-[9px] font-black uppercase tracking-widest gap-1.5 rounded-md shadow-sm">
                   {buttonLabel} <ChevronRight className="w-3.5 h-3.5" />
                 </Button>

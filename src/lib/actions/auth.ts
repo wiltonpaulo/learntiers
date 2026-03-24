@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
@@ -9,31 +10,47 @@ export async function loginAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const locale = formData.get('locale') as string || 'en'
-  let next = (formData.get('next') as string) || `/${locale}/my-learning`
+  const nextInput = (formData.get('next') as string) || '/my-learning'
 
-  if (next === '/' || next === `/${locale}` || next === `/${locale}/`) {
-    next = `/${locale}/my-learning`
-  }
+  // 1. Standardize the path: Ensure it starts with / and remove any existing locale prefix
+  let cleanPath = nextInput;
+  if (!cleanPath.startsWith('/')) cleanPath = '/' + cleanPath;
 
-  if (next.startsWith('http')) {
-    try {
-      const url = new URL(next)
-      next = url.pathname + url.search
-    } catch {
-      next = `/${locale}/my-learning`
+  // Remove ANY known locale prefix to get the logical path
+  const locales = ['en', 'es', 'pt-br'];
+  for (const loc of locales) {
+    if (cleanPath.startsWith(`/${loc}/`)) {
+      cleanPath = cleanPath.replace(`/${loc}`, '');
+      break;
+    } else if (cleanPath === `/${loc}`) {
+      cleanPath = '/';
+      break;
     }
   }
+
+  // 2. Apply default redirect logic for high-level pages
+  // We want users coming from home or catalog to land in my-learning
+  const landingPages = ['/', '/courses', '/leaderboard'];
+  if (landingPages.includes(cleanPath)) {
+    cleanPath = '/my-learning';
+  }
+
+  // 3. Final Absolute Destination with the current locale
+  // Example: cleanPath "/my-learning" + locale "en" -> "/en/my-learning"
+  const finalDestination = `/${locale}${cleanPath === '/' ? '' : cleanPath}`;
 
   try {
     const supabase = await createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message)
+    revalidatePath('/', 'layout')
   } catch (err: any) {
-    const errorUrl = `/${locale}/?auth=login&error=${encodeURIComponent(err.message || 'Login failed.')}${next ? `&next=${encodeURIComponent(next)}` : ''}`
+    // Preserve email and next destination even on error to keep the context
+    const errorUrl = `/${locale}/?auth=login&error=${encodeURIComponent(err.message || 'Login failed.')}&next=${encodeURIComponent(cleanPath)}&email=${encodeURIComponent(email)}`
     redirect(errorUrl)
   }
 
-  redirect(next)
+  redirect(finalDestination)
 }
 
 // ─── Signup ───────────────────────────────────────────────────────────────────
@@ -43,7 +60,7 @@ export async function signupAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const locale = formData.get('locale') as string || 'en'
-  const next = formData.get('next') as string
+  const next = formData.get('next') as string || '/my-learning'
 
   try {
     const supabase = await createClient()
@@ -56,10 +73,10 @@ export async function signupAction(formData: FormData) {
     })
     if (error) throw new Error(error.message)
   } catch (err: any) {
-    redirect(`/${locale}/?auth=register&error=${encodeURIComponent(err.message || 'Signup failed.')}`)
+    redirect(`/${locale}/?auth=register&error=${encodeURIComponent(err.message || 'Signup failed.')}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`)
   }
 
-  const loginUrl = `/${locale}/?auth=login&message=Check+your+email+to+confirm+your+account.${next ? `&next=${encodeURIComponent(next)}` : ''}`
+  const loginUrl = `/${locale}/?auth=login&message=Check+your+email+to+confirm+your+account.&next=${encodeURIComponent(next)}&email=${encodeURIComponent(email)}`
   redirect(loginUrl)
 }
 
@@ -91,6 +108,7 @@ export async function updateProfileAction(formData: FormData) {
     await supabase.auth.updateUser({
       data: { name }
     })
+    revalidatePath('/', 'layout')
   } catch (err: any) {
     redirect(`/${locale}/settings?error=${encodeURIComponent(err.message || 'Update failed.')}`)
   }
@@ -123,6 +141,7 @@ export async function logoutAction(formData: FormData) {
   try {
     const supabase = await createClient()
     await supabase.auth.signOut()
+    revalidatePath('/', 'layout')
   } catch (err) {
     // Sign out failed, but we still redirect to home
   }

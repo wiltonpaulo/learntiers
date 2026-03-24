@@ -71,14 +71,14 @@ export function SectionView({
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'summary' | 'takeaways' | 'transcript' | 'playground' | 'notes'>('summary')
-  const [currentTime, setCurrentTime] = useState(startTimeSeconds)
   const [activeLineIndex, setActiveLineIndex] = useState(-1)
   const [isTheaterMode, setIsTheaterMode] = useState(false)
 
-  const { isCinemaMode, setPlayerApi, setCurrentTime: setGlobalCurrentTime, autoplay, setAutoplay } = useSectionLayout()
+  const { isCinemaMode, setPlayerApi, currentTime, setCurrentTime: setGlobalCurrentTime, autoplay, setAutoplay } = useSectionLayout()
 
   const [hasResumed, setHasResumed] = useState(false)
   const playerRef = useRef<SlicedYouTubePlayerRef>(null)
+  const lastUpdateRef = useRef<number>(0)
 
   // Handle Resume logic on first load
   useEffect(() => {
@@ -102,7 +102,7 @@ export function SectionView({
           resumeTime = time
         }
       } catch (e) {
-        console.error("Resume error:", e)
+        // console.error("Resume error:", e)
       }
     }
 
@@ -180,8 +180,10 @@ export function SectionView({
   }, [sectionId])
 
   const handleTimeUpdate = useCallback((time: number) => {
-    setCurrentTime(time)
-    setGlobalCurrentTime(time)
+    if (Math.abs(time - lastUpdateRef.current) >= 0.1) {
+      setGlobalCurrentTime(time)
+      lastUpdateRef.current = time
+    }
   }, [setGlobalCurrentTime])
 
   const handleSeekVideo = (seconds: number) => {

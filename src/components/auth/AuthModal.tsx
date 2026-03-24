@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Mail, ArrowRight, Loader2, Lock, User } from "lucide-react"
 import { loginAction, signupAction } from "@/lib/actions/auth"
-import { usePathname, useSearchParams, useRouter } from "next/navigation"
+import { useSearchParams, useParams } from "next/navigation"
+import { usePathname, useRouter } from "@/i18n/routing"
 
 interface AuthModalProps {
   isOpen: boolean
@@ -18,14 +19,17 @@ interface AuthModalProps {
 export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalProps) {
   const [view, setView] = React.useState<'login' | 'register'>(initialView)
   const [isLoading, setIsLoading] = React.useState(false)
-  const pathname = usePathname()
+  const pathname = usePathname() // i18n-aware, no locale prefix
   const searchParams = useSearchParams()
+  const params = useParams()
   const router = useRouter()
   
-  const locale = pathname.split('/')[1] || 'en'
+  const locale = (params.locale as string) || 'en'
   const error = searchParams.get('error')
   const message = searchParams.get('message')
   const nextParam = searchParams.get('next')
+  const emailParam = searchParams.get('email')
+  const nameParam = searchParams.get('name')
 
   // Sync internal view with prop changes
   React.useEffect(() => {
@@ -40,9 +44,9 @@ export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalP
     const newView = view === 'login' ? 'register' : 'login'
     setView(newView)
     // Update URL without full refresh to stay in sync
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('auth', newView)
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    const urlParams = new URLSearchParams(searchParams.toString())
+    urlParams.set('auth', newView)
+    router.replace(`${pathname}?${urlParams.toString()}`, { scroll: false })
   }
 
   return (
@@ -82,7 +86,7 @@ export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalP
               <Label htmlFor="name" className="text-slate-400 font-bold text-[10px] uppercase tracking-widest ml-1">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input id="name" name="name" placeholder="John Doe" className="bg-slate-50 border-slate-200 h-12 rounded-xl text-slate-900 focus:ring-primary/20 pl-10" required />
+                <Input id="name" name="name" placeholder="John Doe" defaultValue={nameParam || ''} className="bg-slate-50 border-slate-200 h-12 rounded-xl text-slate-900 focus:ring-primary/20 pl-10" required />
               </div>
             </div>
           )}
@@ -91,7 +95,7 @@ export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalP
             <Label htmlFor="email" className="text-slate-400 font-bold text-[10px] uppercase tracking-widest ml-1">Email Address</Label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input id="email" name="email" type="email" placeholder="you@example.com" className="bg-slate-50 border-slate-200 h-12 rounded-xl text-slate-900 focus:ring-primary/20 pl-10" required />
+              <Input id="email" name="email" type="email" placeholder="you@example.com" defaultValue={emailParam || ''} className="bg-slate-50 border-slate-200 h-12 rounded-xl text-slate-900 focus:ring-primary/20 pl-10" required />
             </div>
           </div>
 
