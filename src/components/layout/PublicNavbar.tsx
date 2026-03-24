@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { Link, usePathname, useRouter } from "@/i18n/routing"
 import { 
   GraduationCap, 
   Search, 
@@ -30,6 +29,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { UserMenu } from "@/components/auth/UserMenu"
 import { AuthModal } from "@/components/auth/AuthModal"
+import { useSearchParams } from "next/navigation"
 
 const EXPLORE_ITEMS = [
   {
@@ -67,7 +67,7 @@ export function PublicNavbar() {
   const [mounted, setMounted] = React.useState(false)
   
   const router = useRouter()
-  const pathname = usePathname()
+  const pathname = usePathname() // This is now i18n-aware (doesn't include locale prefix)
   const searchParams = useSearchParams()
   const supabase = createClient()
 
@@ -82,13 +82,19 @@ export function PublicNavbar() {
   }, [searchParams])
 
   React.useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    // Initial fetch
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
       setLoading(false)
-    })
+    }
+    
+    checkUser()
 
+    // Real-time listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      setLoading(false)
     })
 
     return () => {
@@ -125,61 +131,61 @@ export function PublicNavbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-[#1c1d1f] border-b border-white/5 backdrop-blur-md">
-        <div className="container mx-auto h-16 flex items-center justify-between px-4 gap-4">
+      <header className="sticky top-0 z-50 w-full bg-[#1c1d1f] border-b border-white/5 backdrop-blur-md h-16">
+        <div className="container mx-auto h-full flex items-center justify-between px-4 gap-4">
           {/* Left: Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0 group">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:bg-primary/90 transition-colors">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-lg tracking-tight text-white">LearnTiers</span>
-          </Link>
+          <div className="flex items-center gap-8">
+            <Link href="/" className="flex items-center gap-2 shrink-0 group">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:bg-primary/90 transition-colors">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-bold text-lg tracking-tight text-white">LearnTiers</span>
+            </Link>
 
-          {/* Center: Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {mounted ? (
-              <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="gap-1 text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                      Explore <ChevronDown className="w-4 h-4 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-[450px] p-4 grid grid-cols-2 gap-2 bg-[#1c1d1f] border-white/10 shadow-2xl rounded-2xl">
-                    <DropdownMenuLabel className="col-span-2 text-[10px] uppercase tracking-widest text-slate-500 mb-2 px-3 font-black">Learning Tracks</DropdownMenuLabel>
-                    {EXPLORE_ITEMS.map((item) => (
-                      <Link key={item.title} href={item.href}>
-                        <DropdownMenuItem className="flex items-start gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5 focus:bg-white/5 transition-colors border border-transparent hover:border-white/5">
-                          <div className="mt-0.5 p-2 rounded-lg bg-white/5">{item.icon}</div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-bold text-white leading-none">{item.title}</p>
-                            <p className="text-xs text-slate-400 leading-snug line-clamp-2">{item.description}</p>
-                          </div>
-                        </DropdownMenuItem>
-                      </Link>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+            {/* Main Desktop Nav */}
+            <nav className="hidden lg:flex items-center gap-1">
+              {mounted ? (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="gap-1 text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors h-9">
+                        Explore <ChevronDown className="w-4 h-4 opacity-50" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-[450px] p-4 grid grid-cols-2 gap-2 bg-[#1c1d1f] border-white/10 shadow-2xl rounded-2xl">
+                      <DropdownMenuLabel className="col-span-2 text-[10px] uppercase tracking-widest text-slate-500 mb-2 px-3 font-black">Learning Tracks</DropdownMenuLabel>
+                      {EXPLORE_ITEMS.map((item) => (
+                        <Link key={item.title} href={item.href}>
+                          <DropdownMenuItem className="flex items-start gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5 focus:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+                            <div className="mt-0.5 p-2 rounded-lg bg-white/5">{item.icon}</div>
+                            <div className="space-y-1">
+                              <p className="text-sm font-bold text-white leading-none">{item.title}</p>
+                              <p className="text-xs text-slate-400 leading-snug line-clamp-2">{item.description}</p>
+                            </div>
+                          </DropdownMenuItem>
+                        </Link>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                <NavLink href="/courses">Courses</NavLink>
-                <NavLink href="/leaderboard">Ranking</NavLink>
-              </>
-            ) : (
-              <div className="w-[200px]" /> // Placeholder
-            )}
-          </nav>
+                  <NavLink href="/courses">Courses</NavLink>
+                  <NavLink href="/leaderboard">Ranking</NavLink>
+                  
+                  {user && (
+                    <NavLink href="/my-learning">My Learning</NavLink>
+                  )}
+                </>
+              ) : (
+                <div className="w-[200px]" />
+              )}
+            </nav>
+          </div>
 
           {/* Right: Auth Cluster */}
           <div className="flex items-center gap-3">
             {mounted && !loading ? (
               user ? (
                 <div className="flex items-center gap-3">
-                  <Button size="sm" asChild className="hidden sm:flex font-bold gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-5 h-9">
-                    <Link href="/my-learning">
-                      <LayoutDashboard className="w-4 h-4" />
-                      My Learning
-                    </Link>
-                  </Button>
                   <UserMenu user={{
                     name: user.user_metadata?.name || user.email?.split('@')[0],
                     email: user.email,
@@ -207,7 +213,7 @@ export function PublicNavbar() {
                 </div>
               )
             ) : (
-              <div className="w-[100px]" /> // Placeholder
+              <div className="w-[100px]" />
             )}
 
             {/* Mobile Menu Toggle */}
@@ -259,6 +265,14 @@ export function PublicNavbar() {
                     Global Ranking
                   </Link>
                 </Button>
+                {user && (
+                  <Button variant="ghost" asChild className="justify-start font-bold gap-3 h-12 rounded-xl text-white/70 hover:text-white hover:bg-white/5">
+                    <Link href="/my-learning" onClick={() => setIsMobileMenuOpen(false)}>
+                      <LayoutDashboard className="w-5 h-5 text-primary" />
+                      My Learning
+                    </Link>
+                  </Button>
+                )}
               </div>
 
               <div className="pt-2">
@@ -272,12 +286,20 @@ export function PublicNavbar() {
                     </Button>
                   </div>
                 ) : (
-                  <Button asChild className="w-full font-bold gap-2 h-11 rounded-xl bg-primary text-primary-foreground">
-                    <Link href="/my-learning" onClick={() => setIsMobileMenuOpen(false)}>
-                      <LayoutDashboard className="w-4 h-4" />
-                      My Learning
-                    </Link>
-                  </Button>
+                  <div className="p-2 bg-white/5 rounded-xl">
+                    <p className="text-[10px] uppercase font-black text-slate-500 mb-3 px-2">Account</p>
+                    <div className="flex items-center gap-3 px-2 pb-2">
+                       <UserMenu user={{
+                        name: user.user_metadata?.name || user.email?.split('@')[0],
+                        email: user.email,
+                        image: user.user_metadata?.avatar_url
+                      }} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{user.user_metadata?.name || user.email?.split('@')[0]}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -298,7 +320,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   return (
     <Link 
       href={href} 
-      className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-all"
+      className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-all h-9 flex items-center"
     >
       {children}
     </Link>

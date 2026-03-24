@@ -205,9 +205,7 @@ export function SectionLayoutClient({
 
   const progressPercentage = Math.round((completedCount / totalCount) * 100) || 0
 
-  if (!isMounted) return <div className="h-screen w-screen bg-background" />
-
-  const contextValue = {
+  const contextValue = useMemo(() => ({
     isCinemaMode, setIsCinemaMode,
     isAISidebarOpen, setIsAISidebarOpen,
     isSidebarOpen, setIsSidebarOpen,
@@ -220,7 +218,13 @@ export function SectionLayoutClient({
     currentTime, setCurrentTime,
     onSeek,
     playerApi, setPlayerApi
-  }
+  }), [
+    isCinemaMode, isAISidebarOpen, isSidebarOpen, messages, 
+    isChatLoading, autoplay, draftNoteContent, draftCapturedTime, 
+    startTimeSeconds, currentTime, onSeek, playerApi
+  ])
+
+  if (!isMounted) return <div className="h-screen w-screen bg-background" />
 
   return (
     <SectionLayoutContext.Provider value={contextValue}>

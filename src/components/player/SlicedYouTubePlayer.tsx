@@ -88,23 +88,33 @@ export const SlicedYouTubePlayer = forwardRef<SlicedYouTubePlayerRef, SlicedYouT
 
     // Autoplay Timer Logic
     useEffect(() => {
+      if (sectionEnded) {
+        setAutoNextCountdown(5)
+      }
+    }, [sectionEnded])
+
+    useEffect(() => {
       let interval: NodeJS.Timeout
       if (sectionEnded && autoplay && onNextSection) {
-        setAutoNextCountdown(5)
         interval = setInterval(() => {
+          let triggerNext = false
           setAutoNextCountdown((prev) => {
             if (prev <= 1) {
-              clearInterval(interval)
-              onNextSection()
+              triggerNext = true
               return 0
             }
             return prev - 1
           })
+
+          if (triggerNext) {
+            clearInterval(interval)
+            onNextSection()
+          }
         }, 1000)
-      } else {
-        setAutoNextCountdown(5)
       }
-      return () => clearInterval(interval)
+      return () => {
+        if (interval) clearInterval(interval)
+      }
     }, [sectionEnded, autoplay, onNextSection])
 
     useImperativeHandle(ref, () => ({

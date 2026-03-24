@@ -10,6 +10,7 @@ import { CourseCardWithPreview } from './CourseCardWithPreview'
 interface Course {
   id: string
   slug: string
+  entrySectionSlug?: string | null
   title: string
   author: string
   duration: string
@@ -84,7 +85,9 @@ export function CourseDeck({ title, subtitle, courses, buttonLabel = 'resume' }:
         {courses.map((course) => (
           <CourseCardWithPreview key={course.id} course={course} buttonLabel={buttonLabel}>
             <Link 
-              href={`/${locale}/courses/${course.slug}`}
+              href={course.entrySectionSlug 
+                ? `/${locale}/courses/${course.slug}/sections/${course.entrySectionSlug}` 
+                : `/${locale}/courses/${course.slug}`}
               className="min-w-[280px] max-w-[280px] snap-start group cursor-pointer block"
             >
               {/* Image Container */}

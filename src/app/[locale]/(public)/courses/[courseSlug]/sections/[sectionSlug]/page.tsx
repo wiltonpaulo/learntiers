@@ -235,7 +235,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
             <p className="text-sm text-slate-500 font-medium max-w-xs">Complete this final lesson to claim your verified certificate.</p>
           </div>
           <Link
-            href={`/${locale}/courses/${courseSlug}`}
+            href={`/${locale}/courses/${courseSlug}/completed`}
             className="flex items-center gap-2 bg-purple-600 text-white text-sm font-black px-8 py-3.5 rounded-xl hover:bg-purple-700 transition-all shadow-xl shadow-purple-200 active:scale-95"
           >
             FINISH COURSE
