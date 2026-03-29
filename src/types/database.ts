@@ -30,6 +30,9 @@ export interface CourseRow {
   transcript: Json | null
   youtube_channel_name: string | null
   youtube_channel_url: string | null
+  level: 'Beginner' | 'Intermediate' | 'Advanced' | null
+  skills: string[] | null
+  suggested_track: string | null
   created_at: string
 }
 

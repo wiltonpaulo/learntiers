@@ -29,6 +29,8 @@ interface CoursePreviewProps {
     percentage?: number
     created_at?: string
     totalSections?: number
+    level?: string | null
+    skills?: string[] | null
   }
   children: React.ReactNode
   buttonLabel?: string
@@ -137,6 +139,25 @@ export function CourseCardWithPreview({ course, children, buttonLabel = 'resume'
                   {course.description}
                 </p>
               )}
+
+              {/* Skills and Level badges */}
+              <div className="flex flex-wrap gap-1 mt-1">
+                {course.level && (
+                  <div className={cn(
+                    "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border",
+                    course.level === 'Beginner' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                    course.level === 'Intermediate' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                    "bg-rose-50 text-rose-600 border-rose-100"
+                  )}>
+                    {course.level}
+                  </div>
+                )}
+                {course.skills?.slice(0, 3).map(skill => (
+                  <div key={skill} className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 text-[8px] font-bold uppercase tracking-widest">
+                    {skill}
+                  </div>
+                ))}
+              </div>
 
               <div className="flex items-center gap-3 pt-2 border-t border-slate-100 mt-2">
                 <div className="flex items-center gap-1 text-[9px] font-black uppercase text-blue-600 tracking-widest">

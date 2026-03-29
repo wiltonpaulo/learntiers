@@ -99,6 +99,8 @@ export default async function MyLearningPage({ params }: { params: Promise<{ loc
       percentage,
       cover_image_url: course.cover_image_url,
       totalSections: total,
+      level: course.level,
+      skills: course.skills,
       created_at: course.created_at
     }
   })

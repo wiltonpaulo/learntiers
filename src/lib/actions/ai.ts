@@ -155,6 +155,72 @@ export async function generatePlaygroundCodeAction(sectionId: string) {
   }
 }
 
+export async function generateCourseMetadataAction(courseId: string) {
+  const supabase = createAdminClient()
+  
+  // 1. Fetch course title and section titles
+  const { data: course } = await supabase.from('courses')
+    .select('title')
+    .eq('id', courseId)
+    .single() as { data: { title: string } | null }
+
+  const { data: sections } = await supabase.from('course_sections')
+    .select('title')
+    .eq('course_id', courseId)
+    .order('order_index', { ascending: true }) as { data: { title: string }[] | null }
+
+  if (!course) return { error: 'Course not found.' }
+
+  const sectionTitles = (sections || []).map(s => s.title).join(', ')
+
+  const result = await callAIServiceWithFallback({
+    messages: [
+      {
+        role: 'system',
+        content: `You are a Senior Educational Curator and Information Architect for "LearnTiers", an EdTech platform.
+        Analyze the course title and its modules to extract essential metadata.
+        
+        STRICT RULES:
+        1. Level: Classify as "Beginner", "Intermediate", or "Advanced" based on technical depth.
+        2. Skills: Extract 3 to 5 practical skills, tools, or core concepts.
+        3. Track: Suggest a professional learning path/track where this course fits perfectly.
+        4. Language: Everything must be in English.
+        
+        JSON SCHEMA:
+        {
+          "suggested_level": "Beginner | Intermediate | Advanced",
+          "main_skills": ["Skill 1", "Skill 2", "Skill 3"],
+          "suggested_track": "Track Name"
+        }`,
+      },
+      {
+        role: 'user',
+        content: `Course Title: ${course.title}\nModules: ${sectionTitles}`,
+      },
+    ],
+    response_format: { type: 'json_object' },
+    temperature: 0.3,
+  })
+
+  if (result.error) return { error: result.error }
+
+  try {
+    const content = JSON.parse(result.content!)
+    const metadata = {
+      level: content.suggested_level,
+      skills: content.main_skills,
+      suggested_track: content.suggested_track
+    }
+
+    await (supabase.from('courses') as any).update(metadata).eq('id', courseId)
+
+    revalidatePath('/')
+    return { success: true, metadata }
+  } catch (err) {
+    return { error: 'Failed to process AI metadata response.' }
+  }
+}
+
 export async function chatWithAIAction(sectionId: string, question: string, history: { role: 'user' | 'assistant', content: string }[]) {
   const transcriptRes = await getTranscriptForAI(sectionId)
   if ('error' in transcriptRes) return { error: transcriptRes.error }

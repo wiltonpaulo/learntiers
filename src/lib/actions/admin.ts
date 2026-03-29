@@ -9,6 +9,7 @@ import type { CourseRow, CourseSectionRow } from '@/types/database'
 import { s3Client, S3_BUCKET } from '@/lib/s3'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { generateSlug } from '@/lib/utils'
+import { generateCourseMetadataAction } from './ai'
 
 // ─── Guard helper ─────────────────────────────────────────────────────────────
 
@@ -158,6 +159,13 @@ export async function createCourseAction(formData: FormData) {
         }
       }
     }
+
+    // Trigger AI metadata generation automatically for new courses
+    try {
+      await generateCourseMetadataAction(courseId)
+    } catch (aiError) {
+      console.error('[AI Metadata] Failed to auto-generate for new course:', aiError)
+    }
   } catch (err: any) {
     if (errorMessage) {
       redirect(`/admin/courses/new?error=${encodeURIComponent(errorMessage)}`)
@@ -183,11 +191,22 @@ export async function updateCourseAction(formData: FormData) {
     const slug = generateSlug(title)
     courseSlug = slug
 
+    const skillsJson = formData.get('skills_json') as string
+    let skills = []
+    try {
+      skills = JSON.parse(skillsJson || '[]')
+    } catch (e) {
+      // fallback
+    }
+
     let updatePayload: any = {
       title,
       slug,
       description: (formData.get('description') as string) || null,
       cover_image_url: (formData.get('cover_image_url') as string) || null,
+      level: (formData.get('level') as string) || 'Beginner',
+      skills: skills,
+      suggested_track: (formData.get('suggested_track') as string) || null,
     }
 
     const transcriptFile = formData.get('transcript_file') as File | null
