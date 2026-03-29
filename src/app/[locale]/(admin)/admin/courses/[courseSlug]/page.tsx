@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { ChevronLeft, Plus, Pencil, Trash2, GripVertical, Clock, ExternalLink } from 'lucide-react'
 import type { CourseSectionRow, CourseRow } from '@/types/database'
+import { CourseMetadataForm } from '@/components/admin/CourseMetadataForm'
 
 interface CourseEditPageProps {
   params: Promise<{ courseSlug: string }>
@@ -23,9 +24,9 @@ export default async function CourseEditPage({ params, searchParams }: CourseEdi
 
   const { data: course } = await (db
     .from('courses')
-    .select('id, slug, title, description, cover_image_url')
+    .select('id, slug, title, description, cover_image_url, level, skills, suggested_track')
     .eq('slug', courseSlug)
-    .single() as any) as { data: Pick<CourseRow, 'id' | 'slug' | 'title' | 'description' | 'cover_image_url'> | null }
+    .single() as any) as { data: Pick<CourseRow, 'id' | 'slug' | 'title' | 'description' | 'cover_image_url' | 'level' | 'skills' | 'suggested_track'> | null }
 
   if (!course) notFound()
 
@@ -121,6 +122,15 @@ export default async function CourseEditPage({ params, searchParams }: CourseEdi
               Uploading a new file will overwrite the existing synchronized transcript for this course.
             </p>
           </div>
+
+          <Separator className="my-4" />
+
+          <CourseMetadataForm 
+            courseId={courseId}
+            initialLevel={course.level}
+            initialSkills={course.skills}
+            initialSuggestedTrack={course.suggested_track}
+          />
 
           <div className="flex justify-end pt-2 border-t">
             <button

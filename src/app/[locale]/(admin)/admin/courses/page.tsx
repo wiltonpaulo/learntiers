@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getLocale } from 'next-intl/server'
 import { deleteCourseAction } from '@/lib/actions/admin'
 import { Plus, Pencil, Trash2, BookOpen, PlayCircle } from 'lucide-react'
+import { EnhanceAllCoursesButton } from '@/components/admin/EnhanceAllCoursesButton'
 
 export default async function AdminCoursesPage() {
   const locale = await getLocale()
@@ -10,8 +11,12 @@ export default async function AdminCoursesPage() {
 
   const { data: courses } = await db
     .from('courses')
-    .select('id, slug, title, description, created_at')
+    .select('id, slug, title, description, level, skills, created_at')
     .order('created_at', { ascending: false })
+
+  const missingMetadataIds = (courses || [])
+    .filter((c: any) => !c.level || !c.skills || (Array.isArray(c.skills) && c.skills.length === 0))
+    .map((c: any) => c.id)
 
   const { data: sectionCounts } = await db
     .from('course_sections')
@@ -29,13 +34,18 @@ export default async function AdminCoursesPage() {
           <h1 className="text-xl font-bold">Courses</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{courses?.length ?? 0} course{courses?.length !== 1 ? 's' : ''}</p>
         </div>
-        <Link
-          href={`/${locale}/admin/courses/new`}
-          className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New course
-        </Link>
+        <div className="flex items-center gap-3">
+          {missingMetadataIds.length > 0 && (
+            <EnhanceAllCoursesButton courseIds={missingMetadataIds} />
+          )}
+          <Link
+            href={`/${locale}/admin/courses/new`}
+            className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New course
+          </Link>
+        </div>
       </div>
 
       {courses && courses.length > 0 ? (
