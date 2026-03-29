@@ -32,6 +32,11 @@ import { AuthModal } from "@/components/auth/AuthModal"
 import { useSearchParams } from "next/navigation"
 import SearchOverlay from "@/components/ui/SearchOverlay"
 import { NavbarScore } from "./NavbarScore"
+import { ShieldCheck } from "lucide-react"
+
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'wiltonpaulo@gmail.com')
+  .split(',')
+  .map(email => email.trim().toLowerCase());
 
 const EXPLORE_ITEMS = [
   {
@@ -68,6 +73,11 @@ export function PublicNavbar() {
   const [loading, setLoading] = React.useState(true)
   const [mounted, setMounted] = React.useState(false)
   
+  const isAdmin = React.useMemo(() => {
+    if (!user?.email) return false;
+    return ADMIN_EMAILS.includes(user.email.toLowerCase());
+  }, [user]);
+
   const router = useRouter()
   const pathname = usePathname() // This is now i18n-aware (doesn't include locale prefix)
   const searchParams = useSearchParams()
@@ -185,7 +195,18 @@ export function PublicNavbar() {
           <div className="flex items-center gap-2 sm:gap-3">
             <nav className="hidden lg:flex items-center gap-1">
               {mounted && user && (
-                <NavLink href="/my-learning">My Learning</NavLink>
+                <>
+                  {isAdmin && (
+                    <Link 
+                      href="/admin" 
+                      className="px-4 py-2 text-sm font-bold text-amber-400 hover:text-amber-300 hover:bg-white/10 rounded-md transition-all h-9 flex items-center gap-1.5"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Admin
+                    </Link>
+                  )}
+                  <NavLink href="/my-learning">My Learning</NavLink>
+                </>
               )}
             </nav>
 
@@ -282,6 +303,14 @@ export function PublicNavbar() {
                     <Link href="/my-learning" onClick={() => setIsMobileMenuOpen(false)}>
                       <LayoutDashboard className="w-5 h-5 text-primary" />
                       My Learning
+                    </Link>
+                  </Button>
+                )}
+                {user && isAdmin && (
+                  <Button variant="ghost" asChild className="justify-start font-bold gap-3 h-12 rounded-xl text-amber-400 hover:text-amber-300 hover:bg-white/5">
+                    <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
+                      <ShieldCheck className="w-5 h-5" />
+                      Admin Panel
                     </Link>
                   </Button>
                 )}
