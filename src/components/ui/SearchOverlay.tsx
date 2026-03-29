@@ -137,7 +137,7 @@ export default function SearchOverlay() {
                     {recentlyViewed.map((course) => (
                       <Link
                         key={course.id}
-                        href={`/${locale}/courses/${course.id}`}
+                        href={`/${locale}/courses/${course.slug || course.id}`}
                         onClick={() => setIsOpen(false)}
                         className="flex items-center gap-4 p-2 rounded-xl hover:bg-slate-50 transition-colors group border border-transparent hover:border-slate-100"
                       >
