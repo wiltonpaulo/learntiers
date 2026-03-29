@@ -30,6 +30,8 @@ import { createClient } from "@/lib/supabase/client"
 import { UserMenu } from "@/components/auth/UserMenu"
 import { AuthModal } from "@/components/auth/AuthModal"
 import { useSearchParams } from "next/navigation"
+import SearchOverlay from "@/components/ui/SearchOverlay"
+import { NavbarScore } from "./NavbarScore"
 
 const EXPLORE_ITEMS = [
   {
@@ -133,18 +135,17 @@ export function PublicNavbar() {
     <>
       <header className="sticky top-0 z-50 w-full bg-[#1c1d1f] border-b border-white/5 backdrop-blur-md h-16">
         <div className="container mx-auto h-full flex items-center justify-between px-4 gap-4">
-          {/* Left: Logo */}
-          <div className="flex items-center gap-8">
+          {/* Left: Logo + Desktop Nav */}
+          <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2 shrink-0 group">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:bg-primary/90 transition-colors">
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-lg tracking-tight text-white">LearnTiers</span>
+              <span className="font-bold text-lg tracking-tight text-white hidden sm:inline-block">LearnTiers</span>
             </Link>
 
-            {/* Main Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-1">
-              {mounted ? (
+              {mounted && (
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -170,22 +171,28 @@ export function PublicNavbar() {
 
                   <NavLink href="/courses">Courses</NavLink>
                   <NavLink href="/leaderboard">Ranking</NavLink>
-                  
-                  {user && (
-                    <NavLink href="/my-learning">My Learning</NavLink>
-                  )}
                 </>
-              ) : (
-                <div className="w-[200px]" />
               )}
             </nav>
           </div>
 
-          {/* Right: Auth Cluster */}
-          <div className="flex items-center gap-3">
+          {/* Center: Search (Hidden on very small, visible on sm+) */}
+          <div className="flex-1 max-w-md hidden md:block">
+            {mounted && <SearchOverlay />}
+          </div>
+
+          {/* Right: User + Auth */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <nav className="hidden lg:flex items-center gap-1">
+              {mounted && user && (
+                <NavLink href="/my-learning">My Learning</NavLink>
+              )}
+            </nav>
+
             {mounted && !loading ? (
               user ? (
                 <div className="flex items-center gap-3">
+                  <NavbarScore userId={user.id} />
                   <UserMenu user={{
                     name: user.user_metadata?.name || user.email?.split('@')[0],
                     email: user.email,
@@ -232,6 +239,11 @@ export function PublicNavbar() {
         {isMobileMenuOpen && (
           <div className="lg:hidden absolute top-full left-0 right-0 bg-[#1c1d1f] border-b border-white/10 animate-in slide-in-from-top-2 duration-200 shadow-xl overflow-y-auto max-h-[calc(100vh-4rem)]">
             <div className="p-4 space-y-6">
+              {/* Search in Mobile */}
+              <div className="md:hidden">
+                <SearchOverlay />
+              </div>
+
               <div className="space-y-1">
                 <p className="text-[10px] uppercase font-bold text-slate-500 px-3 mb-2 tracking-widest">Explore Tracks</p>
                 {EXPLORE_ITEMS.map((item) => (

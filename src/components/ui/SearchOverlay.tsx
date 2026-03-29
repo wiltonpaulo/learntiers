@@ -60,7 +60,7 @@ export default function SearchOverlay() {
   const trending = ['Python', 'Artificial Intelligence', 'Data Science', 'React', 'DevOps', 'Cloud Computing']
 
   return (
-    <div className="relative flex-1 max-w-md px-4">
+    <div className="relative flex-1 max-w-md">
       {/* Backdrop - only visible when isOpen */}
       {isOpen && (
         <div 
